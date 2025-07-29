@@ -6,8 +6,6 @@ class TestingSimpleController extends Controller
     public function tesss(Request $request){
         $data = "Hello Worldepgegkepge!";
         // Generate kunci dan IV
-        // $key = openssl_random_pseudo_bytes(32); // 256-bit
-        // $iv = openssl_random_pseudo_bytes(16);  // 128-bit
         $key = random_bytes(32); // 256-bit
         $iv = random_bytes(16);  // 128-bit
         // Enkripsi
