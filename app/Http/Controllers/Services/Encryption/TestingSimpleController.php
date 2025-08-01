@@ -1,5 +1,7 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Services\Encryption;
+use App\Http\Controllers\Controller;
+use Error;
 use Illuminate\Http\Request;
 class TestingSimpleController extends Controller
 {
@@ -24,7 +26,20 @@ class TestingSimpleController extends Controller
         echo "IV  (base64)        : " . base64_encode($iv) . "<br>";
         echo "IV        : " . $iv . "<br>";
     }
-    public function testting(Request $request){
-        return response()->json();
+    public function testEncrypt(Request $request){
+        try{
+            $encrypted = openssl_encrypt($request->input('input'), 'AES-256-CBC', $request->input('key'), OPENSSL_RAW_DATA, $request->input('iv'));
+            return response()->json(['status'=>'success','data'=>bin2hex($encrypted)]);
+        }catch(Error $e){
+            return response()->json($e, 500);
+        }
+    }
+    public function testDecrypt(Request $request){
+        try{
+            $decrypted = openssl_decrypt(hex2bin($request->input('chiper')), 'AES-256-CBC', $request->input('key'), OPENSSL_RAW_DATA, $request->input('iv'));
+            return response()->json(['status'=>'success','data'=>$decrypted]);
+        }catch(Error $e){
+            return response()->json($e, 500);
+        }
     }
 }

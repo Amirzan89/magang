@@ -1,7 +1,8 @@
 <?php
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Services\Encryption;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-class TestingSimpleController extends Controller
+class TestingRSAController extends Controller
 {
     public function tesss(Request $request){
         $data = "Hello Worldepgegkepge!";

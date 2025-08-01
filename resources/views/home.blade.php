@@ -7,7 +7,6 @@
     <title>Document</title>
 </head>
 <body>
-    
     <script>
         async function aesEncrypt(plaintext, base64Key) {
         const key = await crypto.subtle.importKey(
