@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Services\Encryption\TestingSimpleController;
 use App\Http\Controllers\Services\Encryption\TestingSessionController;
@@ -20,6 +21,13 @@ Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::get('/test-view', function () {
     return view('testingSession');
 });
+Route::get('/pyxis-view', function () {
+    return view('testingAESTable');
+});
+Route::post('/proxy-pyxis', function (Request $request) {
+    return response()->json(Http::post($request->input('url'), $request->except('url'))->json());
+});
+
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
 Route::group(['middleware'=>'auth'],function(){
