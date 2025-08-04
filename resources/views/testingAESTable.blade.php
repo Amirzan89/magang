@@ -183,7 +183,6 @@
     const inpBusinessID = document.getElementById('businessid');
     const aesForm = document.getElementById('aesForm');
     const keyServer = CryptoJS.enc.Utf8.parse("A9CCF340D9A490104AC5159B8E1CBXXX");
-    // const keyServer = "A9CCF340D9A490104AC5159B8E1CBXXX";
     aesForm.onsubmit = function(event){
         event.preventDefault();
         const url = inpUrl.value;
@@ -282,7 +281,8 @@
           "groupid": inpGroupID.value,
           "businessid": inpBusinessID.value
         });
-        const encr = CryptoJS.AES.encrypt(tableData, keyServer, { iv: CryptoJS.enc.Utf8.parse(inpUniqueID.value), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString(CryptoJS.enc.Hex);
+        const ivServer = CryptoJS.enc.Utf8.parse(inpUniqueID.value);
+        const encr = CryptoJS.AES.encrypt(tableData, keyServer, { iv: ivServer, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString(CryptoJS.enc.Hex);
         var requestBody = {
           url: inpUrl.value,
           apikey: inpApiKey.value,
@@ -298,45 +298,8 @@
             if (xhr.readyState == XMLHttpRequest.DONE) {
               if (xhr.status === 200) {
                 const res = JSON.parse(xhr.responseText);
-                console.log('resstt',res);
-                // const responseDecrypted = CryptoJS.enc.Base64.stringify(CryptoJS.AES.decrypt(res.message, keyServer, { iv: CryptoJS.enc.Utf8.parse(res.uniqueid) }).toString(CryptoJS.enc.Utf8));
-                // const responseDecrypted = CryptoJS.enc.Base64.stringify(CryptoJS.AES.decrypt(res.message, keyServer, { iv: CryptoJS.enc.Utf8.parse(res.uniqueid) }));
-                // const responseDecrypted = CryptoJS.AES.decrypt(res.message, keyServer, { iv: CryptoJS.enc.Utf8.parse(res.uniqueid), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).toString(CryptoJS.enc.Utf8);
-                const responseDecrypted = CryptoJS.AES.decrypt(res.message, keyServer, { iv: CryptoJS.enc.Utf8.parse(inpUniqueID.value), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 });
-                console.log('dec',responseDecrypted);
-                console.log('dec',responseDecrypted.toString());
-                const decryptedLatin1 = responseDecrypted.toString(CryptoJS.enc.Latin1);
-
-                // Potong sampai `}` terakhir agar hanya ambil bagian JSON saja
-                const lastBrace = decryptedLatin1.lastIndexOf("}") + 1;
-                const cleanJSON = decryptedLatin1.slice(0, lastBrace);
-                console.log('cleann',cleanJSON)
-
-                // Parse ke JSON
-                try {
-                    const parsed = JSON.parse(cleanJSON);
-                    console.log("✅ Decrypted JSON:", parsed);
-                } catch (e) {
-                    console.error("❌ JSON parse error:", e);
-                    console.log("⚠️ Cleaned String:", cleanJSON);
-                }
-
-                console.log('dec',responseDecrypted.toString(CryptoJS.enc.Latin1));
-                const rawStr = responseDecrypted.toString(CryptoJS.enc.Latin1);
-
-                // 2. Cari posisi } terakhir (akhir JSON), slice, lalu parse:
-                const endJson = rawStr.lastIndexOf("}") + 1;
-                const cleanJsonStr = rawStr.slice(0, endJson);
-
-                try {
-                    const json = JSON.parse(cleanJsonStr);
-                    console.log("✅ Parsed JSON:", json);
-                } catch (e) {
-                    console.error("❌ JSON parse error", e);
-                }
-
-                console.log('dec',responseDecrypted.toString(CryptoJS.enc.Utf8));
-                console.log('dec',responseDecrypted.toString(CryptoJS.enc.Utf8).replace(/[\x00-\x1F\x7F]+$/g, ""));
+                const responseDecrypted = CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(res.data) }, keyServer, { iv: ivServer });
+                console.log(responseDecrypted.toString(CryptoJS.enc.Utf8));
               } else {
                 console.log(JSON.parse(xhr.responseText));
               }
