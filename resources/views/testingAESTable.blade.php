@@ -183,6 +183,33 @@
     const inpBusinessID = document.getElementById('businessid');
     const aesForm = document.getElementById('aesForm');
     const keyServer = CryptoJS.enc.Utf8.parse("A9CCF340D9A490104AC5159B8E1CBXXX");
+    function renderTable(response) {
+      const container = document.getElementById('responseContainer');
+      const tbody = document.querySelector('#resultTable tbody');
+      const count = document.getElementById('recordCount');
+      tbody.innerHTML = '';
+      if (response.data && Array.isArray(response.data)) {
+        response.data.forEach(item => {
+          const row = document.createElement('tr');
+          const cell1 = document.createElement('td');
+          cell1.textContent = item.whcode?.trim() || '-';
+          cell1.style.padding = '8px';
+          cell1.style.borderBottom = '1px solid #ddd';
+          const cell2 = document.createElement('td');
+          cell2.textContent = item.warehouse?.trim() || '-';
+          cell2.style.padding = '8px';
+          cell2.style.borderBottom = '1px solid #ddd';
+          row.appendChild(cell1);
+          row.appendChild(cell2);
+          tbody.appendChild(row);
+        });
+        count.textContent = 'Total Records: ' + (response.totalrecords || response.data.length);
+        container.style.display = 'block';
+      } else {
+        tbody.innerHTML = '<tr><td colspan="2">No data found</td></tr>';
+        container.style.display = 'block';
+      }
+    }
     aesForm.onsubmit = function(event){
         event.preventDefault();
         const url = inpUrl.value;
@@ -298,83 +325,15 @@
             if (xhr.readyState == XMLHttpRequest.DONE) {
               if (xhr.status === 200) {
                 const res = JSON.parse(xhr.responseText);
-                const responseDecrypted = CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(res.data) }, keyServer, { iv: ivServer });
-                console.log(responseDecrypted.toString(CryptoJS.enc.Utf8));
+                const responseDecrypted = CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(res.data) }, keyServer, { iv: ivServer }).toString(CryptoJS.enc.Utf8);
+                renderTable(JSON.parse(responseDecrypted))
               } else {
                 console.log(JSON.parse(xhr.responseText));
               }
             }
         }
-        return false; 
+        return false;
     }
-    // sendBtn.addEventListener('click', () => {
-    //   // Collect form values (you can automate this too)
-    //   const data = {
-    //     whcode: document.getElementById('whcode')?.value || null,
-    //     warehouse: document.getElementById('warehouse')?.value || null
-    //   };
-    //   // MOCK response – replace this with actual fetch() to Laravel
-    //   const mockResponse = {
-    //     data: [
-    //       { whcode: "BALE", warehouse: "BALE BANJAR" },
-    //       { whcode: "COFE", warehouse: "COFFEE SHOP LEGIAN BEACH" },
-    //       { whcode: "IUSLJW", warehouse: "POOL BAR" },
-    //       { whcode: "K5TN2U", warehouse: "SIKU BAR" },
-    //       { whcode: "GYLQLF", warehouse: "TEPPANAYAKI" }
-    //     ],
-    //     totalrecords: 5
-    //   };
-    //   renderTable(mockResponse); // render from mock
-    //   // Uncomment below if sending real AJAX
-    //   // sendData(data);
-    // });
-    function renderTable(response) {
-      const container = document.getElementById('responseContainer');
-      const tbody = document.querySelector('#resultTable tbody');
-      const count = document.getElementById('recordCount');
-      tbody.innerHTML = '';
-      if (response.data && Array.isArray(response.data)) {
-        response.data.forEach(item => {
-          const row = document.createElement('tr');
-          const cell1 = document.createElement('td');
-          cell1.textContent = item.whcode?.trim() || '-';
-          cell1.style.padding = '8px';
-          cell1.style.borderBottom = '1px solid #ddd';
-          const cell2 = document.createElement('td');
-          cell2.textContent = item.warehouse?.trim() || '-';
-          cell2.style.padding = '8px';
-          cell2.style.borderBottom = '1px solid #ddd';
-          row.appendChild(cell1);
-          row.appendChild(cell2);
-          tbody.appendChild(row);
-        });
-        count.textContent = 'Total Records: ' + (response.totalrecords || response.data.length);
-        container.style.display = 'block';
-      } else {
-        tbody.innerHTML = '<tr><td colspan="2">No data found</td></tr>';
-        container.style.display = 'block';
-      }
-    }
-    // Optional: real data sender
-    /*
-    function sendData(formData) {
-      fetch('/your-laravel-endpoint', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify(formData)
-      })
-      .then(res => res.json())
-      .then(data => {
-        renderTable(data);
-      })
-      .catch(err => {
-        console.error(err);
-      });
-    }
-    */
   </script>
 </body>
 </html>
