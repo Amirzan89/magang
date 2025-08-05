@@ -52,16 +52,16 @@ Route::group(['middleware'=>'auth'],function(){
             return response()->json(['status' => 'success', 'message' => 'OK']);
         }
         return view('login');
-    });
+    })->name('login');
     Route::get('/register',function(Request $request){
-        if($request->wantsJson()){
-            return response()->json(['status' => 'success', 'message' => 'OK']);
-        }
+        // if($request->wantsJson()){
+        //     return response()->json(['status' => 'success', 'message' => 'OK']);
+        // }
         return view('register');
     });
-    Route::get('/auth/redirect','Auth\LoginController@redirectToProvider');
-    Route::get('/auth/google', 'Auth\LoginController@handleGoogleLogin');
-    Route::post('/auth/google-tap', 'Auth\LoginController@handleGoogleLogin');
+    // Route::get('/auth/redirect','Auth\LoginController@redirectToProvider');
+    // Route::get('/auth/google', 'Auth\LoginController@handleGoogleLogin');
+    // Route::post('/auth/google-tap', 'Auth\LoginController@handleGoogleLogin');
     // Route::group(["prefix"=>"/verify"],function(){
     //     Route::group(['prefix'=>'/create'],function(){
     //         Route::post('/password','Services\MailController@createForgotPassword');
