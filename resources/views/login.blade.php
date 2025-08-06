@@ -1,3 +1,6 @@
+<?php
+    $tPath = app()->environment('local') ? '' : '';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
