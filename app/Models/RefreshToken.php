@@ -8,7 +8,7 @@ class RefreshToken extends Model implements JWTSubject
 {
     use HasFactory;
     protected $table = "refresh_token";
-    protected $primaryKey = "id";
+    protected $primaryKey = "id_refresh_token";
     public $incrementing = true;
     protected $keyType = 'integer';
     public $timestamps = true;
