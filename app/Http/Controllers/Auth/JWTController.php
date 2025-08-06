@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
 use App\Models\RefreshToken;
+use App\Models\Auth;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -76,20 +77,20 @@ class JWTController extends Controller
             return response()->json('error saving token1',401);
         }
     }
-    //create token and refresh token 
+    //create token and refresh token
     public function createJWTWebsite($email, RefreshToken $refreshToken){
         try{
-            $userData = User::select()->whereRaw("BINARY email = ?",[$email])->first();
-            if ($userData === null){
+            $authData = Auth::select()->whereRaw("BINARY email = ?",[$email])->first();
+            if ($authData === null){
                 return ['status'=>'error','messsage'=>'email not found','code'=>400];
             }
             //check total login on website
             $number = $this->checkTotalLogin(['email'=>$email], 'website');
-            $idUser = $userData['id_user'];
-            unset($userData['id_user']);
-            unset($userData['uuid']);
-            unset($userData['password']);
-            unset($userData['role']);
+            $idAuth = $authData['id_auth'];
+            unset($authData['id_auth']);
+            unset($authData['uuid']);
+            unset($authData['password']);
+            unset($authData['role']);
             $exp = time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED'));
             $expRefresh = time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED'));
             $secretKey = env('JWT_SECRET');
@@ -101,15 +102,15 @@ class JWTController extends Controller
                 for($i = 1; $i <= 3; $i++){
                     DB::table('refresh_token')->whereRaw("BINARY email = ? AND number = $i",[$email])->update(['number'=>$i-1]);
                 }
-                $userData['number'] = 3;
-                $payloadRefresh = ['data' => $userData, 'exp' => $expRefresh];
+                $authData['number'] = 3;
+                $payloadRefresh = ['data' => $authData, 'exp' => $expRefresh];
                 $Rtoken = JWT::encode($payloadRefresh, $secretRefreshKey, 'HS512');
-                $payload = ['data' => $userData, 'exp' => $exp];
+                $payload = ['data' => $authData, 'exp' => $exp];
                 $token = JWT::encode($payload, $secretKey,'HS512');
                 $refreshToken->email = $email;
                 $refreshToken->token = $Rtoken;
                 $refreshToken->number = 3;
-                $refreshToken->id_user = $idUser;
+                $refreshToken->id_auth = $idAuth;
                 if(!$refreshToken->save()){
                     return ['status'=>'error','message'=>'error saving token','code'=>500];
                 }
@@ -120,26 +121,26 @@ class JWTController extends Controller
             //if user has not login
             }else{
                 $refreshToken->email = $email;
-                $refreshToken->id_user = $idUser;
+                $refreshToken->id_auth = $idAuth;
                 $number = $this->checkTotalLogin(['email'=>$email], 'website');
                 if($number['status'] == 'error'){
-                    $userData['number'] = 1;
-                    $payloadRefresh = ['data' => $userData, 'exp' => $expRefresh];
+                    $authData['number'] = 1;
+                    $payloadRefresh = ['data' => $authData, 'exp' => $expRefresh];
                     $Rtoken = JWT::encode($payloadRefresh, $secretRefreshKey, 'HS512');
                     $refreshToken->number = 1;
                     $refreshToken->token = $Rtoken;
-                    $payload = [ 'data' => $userData,'exp' => $exp];
+                    $payload = [ 'data' => $authData,'exp' => $exp];
                     $token = JWT::encode($payload, $secretKey,'HS512');
                     $json = ['status'=>'success', 'data'=> [
                         'token' => $token,
                         'refresh' => $Rtoken
                     ],'number' => 1 ];
                 }else{
-                    $userData['number'] = $number['data'] + 1;
-                    $payloadRefresh = [ 'data' => $userData, 'exp' => $expRefresh];
+                    $authData['number'] = $number['data'] + 1;
+                    $payloadRefresh = [ 'data' => $authData, 'exp' => $expRefresh];
                     $Rtoken = JWT::encode($payloadRefresh, $secretRefreshKey, 'HS512');
                     $refreshToken->token = $Rtoken;
-                    $payload = [ 'data' => $userData, 'exp' => $exp];
+                    $payload = [ 'data' => $authData, 'exp' => $exp];
                     $token = JWT::encode($payload, $secretKey,'HS512');
                     $refreshToken->number = $number['data']+1;
                     $json = ['status'=>'success', 'data'=> [
@@ -177,9 +178,9 @@ class JWTController extends Controller
             if(!(strcmp($data['email'],$decoded['data']['email'] ?? null) === 0)){
                 return ['status'=>'error','message'=>'invalid email'];
             }
-            $userData = UserController::checkEmail($data['email']);
-            if($userData['status'] == 'error') return $userData;
-            return ['status'=>'success','data'=>array_merge($userData['data'], $decoded['data'])];
+            $authData = UserController::checkEmail($data['email']);
+            if($authData['status'] == 'error') return $authData;
+            return ['status'=>'success','data'=>array_merge($authData['data'], $decoded['data'])];
         }catch(ExpiredException $e){
             return ['status'=>'error','message'=>$e->getMessage()];
         } catch (SignatureInvalidException $e) {

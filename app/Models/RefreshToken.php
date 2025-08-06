@@ -13,24 +13,12 @@ class RefreshToken extends Model implements JWTSubject
     protected $keyType = 'integer';
     public $timestamps = true;
     protected $fillable = [
-        'email','token'
+        'email','token', 'id_auth'
     ];
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
-    // protected $fillable = [
-    //     'name',
-    //     'email',
-    //     'password',
-    // ];
-    
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
+    public function toAuth()
+    {
+        return $this->belongsTo(Auth::class, 'id_auth');
+    }
     public function getJWTIdentifier(){
         return $this->getKey();
     }
@@ -41,11 +29,6 @@ class RefreshToken extends Model implements JWTSubject
         // 'password',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
     protected $casts = [
         // 'email_verified_at' => 'datetime',
     ];

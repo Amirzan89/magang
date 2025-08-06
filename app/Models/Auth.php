@@ -17,6 +17,10 @@ class Auth extends Authenticatable
     protected $hidden = [
         'password', 'remember_token',
     ];
+    public function fromRefreshToken()
+    {
+        return $this->hasMany(RefreshToken::class, 'id_refresh_token');
+    }
     public function fromAdmin()
     {
         return $this->hasMany(Admin::class, 'id_admin');

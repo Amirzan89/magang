@@ -10,7 +10,7 @@
 </head>
 <body>
   <script>
-    var csrfToken = "{{ csrf_token() }}";
+    const csrfToken = "{{ csrf_token() }}";
   </script>
   <form class="container" id="aesForm">
     <h3>SQL Request Form</h3>

@@ -3,7 +3,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Auth\JWTController;
 use App\Http\Controllers\UtilityController;
-use App\Models\User;
+use App\Models\Auth;
 use App\Models\RefreshToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,16 +15,14 @@ class LoginController extends Controller
     public function __construct(){
         self::$baseURL = env('FRONTEND_URL', 'locahost:3000');
     }
-    public function Login(Request $request, RecaptchaController $recaptchaController, JWTController $jwtController, RefreshToken $refreshToken){
-        $validator = Validator::make($request->only('email','password', 'recaptcha'), [
+    public function Login(Request $request, JWTController $jwtController, RefreshToken $refreshToken){
+        $validator = Validator::make($request->only('email','password'), [
             'email' => 'required|email',
             'password' => 'required',
-            'recaptcha' => 'required',
         ], [
             'email.required' => 'Email harus di isi',
             'email.email' => 'Email yang anda masukkan invalid',
             'password.required' => 'Password harus di isi',
-            'recaptcha.required' => 'Recaptcha harus di isi',
         ]);
         if ($validator->fails()) {
             $errors = [];
@@ -34,15 +32,11 @@ class LoginController extends Controller
             }
             return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 400);
         }
-        $recaptcha = $recaptchaController->verify($request->input('recaptcha'));
-        if($recaptcha['status'] == 'error'){
-            return response()->json($recaptcha, 400);
-        }
         $email = $request->input("email");
         // $email = "Admin@gmail.com";
         $pass = $request->input("password");
         // $pass = "Admin@1234567890";
-        $user = User::select('password')->whereRaw("BINARY email = ?",[$email])->first();
+        $user = Auth::select('password')->whereRaw("BINARY email = ?",[$email])->first();
         if (is_null($user)) {
             return response()->json(['status' => 'error', 'message' => 'Email salah'], 400);
         }

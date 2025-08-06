@@ -3,6 +3,10 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\UserController;
+
 use App\Http\Controllers\Services\Encryption\TestingSimpleController;
 use App\Http\Controllers\Services\Encryption\TestingSessionController;
 use App\Http\Controllers\Services\Encryption\TestingRSAController;
@@ -83,13 +87,13 @@ Route::group(['middleware'=>'auth'],function(){
     //     });
     // });
     Route::group(['prefix'=>'/users'], function(){
-        Route::post('/login','Auth\LoginController@login');
-        Route::post('/register','Auth\RegisterController@register');
-        Route::post('/register/google', 'UserController@createGoogleUser');
-        Route::post('/logout','UserController@logout');
+        Route::post('/login', [LoginController::class, 'login']);
+        Route::post('/register', [RegisterController::class, 'register']);
+        Route::post('/register/google', [UserController::class, 'createGoogleUser']);
+        Route::post('/logout', [UserController::class, 'logout']);
         Route::group(['prefix'=>'/update'], function(){
-            Route::put('/profile','UserController@updateProfile');
-            Route::put('/password','UserController@updatePassword');
+            Route::post('/profile', [UserController::class, 'updateProfile']);
+            Route::post('/password', [UserController::class, 'updatePassword']);
         });
     });
     // Route::group(['prefix'=>'/transaksi'], function(){
