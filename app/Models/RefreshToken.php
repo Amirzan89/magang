@@ -13,7 +13,7 @@ class RefreshToken extends Model implements JWTSubject
     protected $keyType = 'integer';
     public $timestamps = true;
     protected $fillable = [
-        'email','token', 'id_auth'
+        'email','token', 'status', 'id_auth'
     ];
     public function toAuth()
     {

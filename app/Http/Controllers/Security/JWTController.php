@@ -1,7 +1,8 @@
 <?php
-namespace App\Http\Controllers\Auth;
+namespace App\Http\Controllers\Security;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
+use App\Models\Admin;
 use App\Models\RefreshToken;
 use App\Models\Auth;
 use App\Models\User;
@@ -21,6 +22,10 @@ use InvalidArgumentException;
 use Carbon\Carbon;
 class JWTController extends Controller
 {
+    private static $tempFile;
+    public function __construct(){
+        self::$tempFile = storage_path('seeders/temp/table .json');
+    }
     //cek jumlah login di database
     public function checkTotalLogin($data, $cond){
         $email = $data['email'];
@@ -87,6 +92,7 @@ class JWTController extends Controller
             //check total login on website
             $number = $this->checkTotalLogin(['email'=>$email], 'website');
             $idAuth = $authData['id_auth'];
+            $authData[] = !in_array($authData['role'], ['super_admin', 'admin']) ? User::select()->where('id_auth', $idAuth) : Admin::select()->where('id_auth', $idAuth);
             unset($authData['id_auth']);
             unset($authData['uuid']);
             unset($authData['password']);
@@ -269,6 +275,14 @@ class JWTController extends Controller
         }catch(\Exception $e){
             return ['status'=>'error','message'=>$e->getMessage()];
         }
+    }
+    public function rotateKEYJWT(){
+        $currentMonth = now()->format('w-m-Y');
+        if (Cache::get('jwt_key_month') !== $currentMonth) {
+            File::
+            Cache::put('aes_key_month', $currentMonth);
+        }
+        return ['status'=>'success','message'=>'ddd'];
     }
 }
 ?>

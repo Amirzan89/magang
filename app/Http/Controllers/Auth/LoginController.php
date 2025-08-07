@@ -2,6 +2,7 @@
 namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Auth\JWTController;
+use App\Http\Controllers\EncryptionController;
 use App\Http\Controllers\UtilityController;
 use App\Models\Auth;
 use App\Models\RefreshToken;
@@ -11,11 +12,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
 class LoginController extends Controller
 {
-    private static $baseURL;
-    public function __construct(){
-        self::$baseURL = env('FRONTEND_URL', 'locahost:3000');
-    }
-    public function Login(Request $request, JWTController $jwtController, RefreshToken $refreshToken){
+    public function Login(Request $request, JWTController $jwtController, RefreshToken $refreshToken, EncryptionController $encryptionController){
         $validator = Validator::make($request->only('email','password'), [
             'email' => 'required|email',
             'password' => 'required',
@@ -48,6 +45,7 @@ class LoginController extends Controller
             return response()->json($jwtData, 400);
         }
         $data1 = ['email'=>$email,'number'=>$jwtData['number']];
+        $encryptionController->encryptRequest([]);
         return response()->json(['status'=>'success','message'=>'login sukses silahkan masuk dashboard'])
         ->cookie('token1',base64_encode(json_encode($data1)),time()+intval(env('JWT_ACCESS_TOKEN_EXPIRED')))
         ->cookie('token2',$jwtData['data']['token'],time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')))

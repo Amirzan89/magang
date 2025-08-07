@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Middleware;
 use App\Http\Controllers\Auth\JWTController;
+use App\Http\Controllers\EncryptionController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cookie;
@@ -134,7 +135,9 @@ class Authenticate
             $userAuth = $decoded['data'];
             $userAuth['number'] = $decoded['data']['number'];
             unset($decoded);
-            $request->merge(['user_auth' => $userAuth]);
+            $resultData = app()->make(EncryptionController::class)->encryptRequest($request->input('chiper'));
+            unset($request->input('chiper'));
+            $request->merge(['user_auth' => $userAuth, $resultData]);
             $response = $next($request);
             return $response;
             //when error using this
