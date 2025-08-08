@@ -5,7 +5,7 @@ const pingFirstTime = async () => {
             'X-CSRF-TOKEN': csrfToken,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({}) // or null
+        body: JSON.stringify({})
     });
     if (!response.ok) {
         const error = await response.json();
@@ -13,10 +13,8 @@ const pingFirstTime = async () => {
         return;
     }
     const res = await response.json();
-    console.log(res);
-    sessionStorage.aes_key = CryptoJS.enc.Hex.parse(res.data.aes_key);
+    sessionStorage.aes_key = res.data.aes_key;
     sessionStorage.hmac_key = res.data.hmac_key;
-    return { key: res.data.aes_key, iv:res.data.iv };
 }
 const genIV = async(idUser) => {
     const encoder = new TextEncoder();
@@ -33,12 +31,11 @@ const genIV = async(idUser) => {
     const mergedInput = encoder.encode(idUser + timestamp + random);
     return new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, mergedInput)).slice(0, 16);
 }
-const encryptReq = async (requestBody, key, iv) => {
-    const encrypted = CryptoJS.AES.encrypt(requestBody, CryptoJS.enc.Hex.parse(key), { iv: CryptoJS.enc.Hex.parse(iv), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString(CryptoJS.enc.Hex);
-    console.log('encrypted',encrypted)
-    console.log('iv',iv)
-    return encrypted;
+const encryptReq = async (requestBody) => {
+    const ivHex = [...await genIV()].map(b => b.toString(16).padStart(2, "0")).join("");
+    const encrypted = CryptoJS.AES.encrypt(requestBody, CryptoJS.enc.Hex.parse(sessionStorage.aes_key), { iv: CryptoJS.enc.Hex.parse(ivHex), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString(CryptoJS.enc.Hex);
+    return { data: encrypted, iv: ivHex };
 }
 const decryptRes = (cipher, iv) => {
-    return CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(cipher) }, sessionStorage.aes_key, { iv: CryptoJS.enc.Hex.parse(iv) }).toString(CryptoJS.enc.Utf8);
+    return CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(cipher) }, CryptoJS.enc.Hex.parse(sessionStorage.aes_key), { iv: CryptoJS.enc.Hex.parse(iv) }).toString(CryptoJS.enc.Utf8);
 }

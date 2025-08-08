@@ -8,10 +8,10 @@ const loginForm = document.getElementById('loginForm');
 const keyServer = CryptoJS.enc.Utf8.parse("A9CCF340D9A490104AC5159B8E1CBXXX");
 loginForm.onsubmit = async function(event){
     event.preventDefault();
-    // if((sessionStorage.aes_key == undefined) && (sessionStorage.hmac_key == undefined)){
-    //     pingg = await pingFirstTime();
-    // }
-    const pingg = await pingFirstTime();
+    if((sessionStorage.aes_key == undefined) && (sessionStorage.hmac_key == undefined)){
+        await pingFirstTime();
+    }
+    await pingFirstTime();
     const email = inpEmail.value;
     const password = inpPassword.value;
     if (email.trim() === '') {
@@ -25,24 +25,21 @@ loginForm.onsubmit = async function(event){
     // showLoading();
     var xhr = new XMLHttpRequest();
     const encryptR = await encryptReq(JSON.stringify({
-    // const requestBody = await encryptReq(JSON.stringify({
         email: inpEmail.value,
         password:inpPassword.value
-    }), pingg['key'], pingg['iv']);
+    }));
     // const requestBody = encryptR['data'];
     xhr.open('POST',"/users/login")
     xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
     xhr.setRequestHeader('Content-Type', 'application/json');
-    // xhr.send(JSON.stringify({cipher: requestBody}));
-    xhr.send(JSON.stringify({cipher: encryptR, key: pingg['key'], iv: pingg['iv']}));
+    xhr.send(JSON.stringify({cipher: encryptR['data'], iv: encryptR['iv']}));
     xhr.onreadystatechange = function() {
         if (xhr.readyState == XMLHttpRequest.DONE) {
             if (xhr.status === 200) {
                 // closeLoading();
                 var response = JSON.parse(xhr.responseText);
-                console.log(response)
-                // showGreenPopup(response, 'dashboard');
-                // showGreenPopup(response);
+                console.log('hasil', decryptRes(response, encryptR['iv']));
+                // showGreenPopup(decryptRes(response, encryptR['iv']));
             } else {
                 // closeLoading();
                 var response = JSON.parse(xhr.responseText);

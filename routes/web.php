@@ -117,6 +117,7 @@ Route::group(['middleware'=>'auth'],function(){
 });
 Route::fallback(function(){
     $indexPath = public_path('dist/index.html');
+    exit();
     if (File::exists($indexPath)) {
         $htmlContent = File::get($indexPath);
         return response($htmlContent, 404);

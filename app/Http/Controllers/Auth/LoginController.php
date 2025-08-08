@@ -45,7 +45,7 @@ class LoginController extends Controller
             return response()->json($jwtData, 400);
         }
         $data1 = ['email'=>$email,'number'=>$jwtData['number']];
-        return response()->json($aesController->encryptResponse(['status'=>'success','message'=>'login sukses silahkan masuk dashboard'], $request->input('key'), $request->input('iv')))
+        return response()->json($aesController->encryptResponse(['status'=>'success','message'=>'login sukses silahkan masuk dashboard'], $request->input('iv')))
         ->cookie('token1',base64_encode(json_encode($data1)),time()+intval(env('JWT_ACCESS_TOKEN_EXPIRED')))
         ->cookie('token2',$jwtData['data']['token'],time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')))
         ->cookie('token3',$jwtData['data']['refresh'],time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')));

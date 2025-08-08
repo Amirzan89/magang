@@ -153,7 +153,7 @@ class Authenticate
             // return $next($request);
         }else{
             if(!$request->isMethod('GET')){
-                $resultData = app()->make(AESController::class)->decryptRequest($request->input('cipher'), $request->input('key'), $request->input('iv'));
+                $resultData = app()->make(AESController::class)->decryptRequest($request->input('cipher'), $request->input('iv'));
                 if($resultData['status'] == 'error'){
                     $codeRes = $resultData['code'];
                     unset($resultData['code']);
