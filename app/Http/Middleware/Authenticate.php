@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Middleware;
-use App\Http\Controllers\Auth\JWTController;
-use App\Http\Controllers\EncryptionController;
+use App\Http\Controllers\Security\JWTController;
+use App\Http\Controllers\Security\AESController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cookie;
@@ -135,11 +135,16 @@ class Authenticate
             $userAuth = $decoded['data'];
             $userAuth['number'] = $decoded['data']['number'];
             unset($decoded);
-            $resultData = app()->make(EncryptionController::class)->encryptRequest($request->input('chiper'));
-            unset($request->input('chiper'));
-            $request->merge(['user_auth' => $userAuth, $resultData]);
-            $response = $next($request);
-            return $response;
+            $resultData = app()->make(AESController::class)->decryptRequest($request->input('cipher'), $request->input('iv'));
+            if($resultData['status'] == 'error'){
+                $codeRes = $resultData['code'];
+                unset($resultData['code']);
+                return response()->json($resultData, $codeRes);
+            }
+            $request->merge(array_merge(['user_auth' => $userAuth], $resultData['data']));
+            $request->request->remove('chiper');
+            echo json_encode($request->all());
+            return $next($request);
             //when error using this
             // $userAuth = $decoded['data'];
             // $userAuth['number'] = $decoded['data']['number'];
@@ -147,6 +152,16 @@ class Authenticate
             // $request->merge(['user_auth'=>$userAuth]);
             // return $next($request);
         }else{
+            if(!$request->isMethod('GET')){
+                $resultData = app()->make(AESController::class)->decryptRequest($request->input('cipher'), $request->input('key'), $request->input('iv'));
+                if($resultData['status'] == 'error'){
+                    $codeRes = $resultData['code'];
+                    unset($resultData['code']);
+                    return response()->json($resultData, $codeRes);
+                }
+                $request->merge($resultData['data']);
+                $request->request->remove('cipher');
+            }
             //if cookie gone
             $page = ['/page/dashboard', '/profil', '/admin', '/admin/tambah', '/rekap', '/rekap/tambah'];
             $pagePrefix = ['/admin', '/rekap'];

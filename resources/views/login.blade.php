@@ -26,6 +26,7 @@
         </form>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="{{ asset($tPath.'js/encryption.js') }}"></script>
     <script src="{{ asset($tPath.'js/login.js') }}"></script>
 </body>
 </html>

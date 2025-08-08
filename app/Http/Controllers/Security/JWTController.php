@@ -91,8 +91,9 @@ class JWTController extends Controller
             }
             //check total login on website
             $number = $this->checkTotalLogin(['email'=>$email], 'website');
+            $authData = $authData->toArray();
             $idAuth = $authData['id_auth'];
-            $authData[] = !in_array($authData['role'], ['super_admin', 'admin']) ? User::select()->where('id_auth', $idAuth) : Admin::select()->where('id_auth', $idAuth);
+            $authData[] = !in_array($authData['role'], ['super_admin', 'admin']) ? User::select()->where('id_auth', $idAuth)->first()->toArray() : Admin::select()->where('id_auth', $idAuth)->first()->toArray();
             unset($authData['id_auth']);
             unset($authData['uuid']);
             unset($authData['password']);

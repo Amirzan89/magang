@@ -24,7 +24,7 @@ Route::post('/por', );
 Route::get('/view-aes', function () {
     return view('testingAES');
 });
-Route::get('/get-token', [AESController::class, 'FirstTime']);
+Route::post('/fetch-token', [AESController::class, 'FirstTime']);
 Route::get('/test/simple', [TestingSimpleController::class, 'tesss']);
 Route::post('/test/simple-encrypt', [TestingSimpleController::class, 'testEncrypt']);
 Route::post('/test/simple-decrypt', [TestingSimpleController::class, 'testDecrypt']);

@@ -6,7 +6,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>AES Request Form</title>
-  <link rel="stylesheet" href="{{ asset($tPath.'testingAESTable.css') }}">
+  <link rel="stylesheet" href="{{ asset($tPath.'css/testingAESTable.css') }}">
 </head>
 <body>
   <script>
@@ -106,6 +106,6 @@
     <div id="recordCount" style="margin-top: 10px; font-weight: bold;"></div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-  <script src="{{ asset($tPath.'testingAESTable.js') }}"></script>
+  <script src="{{ asset($tPath.'js/testingAESTable.js') }}"></script>
 </body>
 </html>

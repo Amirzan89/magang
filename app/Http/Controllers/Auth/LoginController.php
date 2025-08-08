@@ -1,8 +1,8 @@
 <?php
 namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Auth\JWTController;
-use App\Http\Controllers\EncryptionController;
+use App\Http\Controllers\Security\JWTController;
+use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\UtilityController;
 use App\Models\Auth;
 use App\Models\RefreshToken;
@@ -12,7 +12,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
 class LoginController extends Controller
 {
-    public function Login(Request $request, JWTController $jwtController, RefreshToken $refreshToken, EncryptionController $encryptionController){
+    public function Login(Request $request, JWTController $jwtController, RefreshToken $refreshToken, AESController $aesController){
         $validator = Validator::make($request->only('email','password'), [
             'email' => 'required|email',
             'password' => 'required',
@@ -32,7 +32,7 @@ class LoginController extends Controller
         $email = $request->input("email");
         // $email = "Admin@gmail.com";
         $pass = $request->input("password");
-        // $pass = "Admin@1234567890";
+        $pass = "Admin@1234567890";
         $user = Auth::select('password')->whereRaw("BINARY email = ?",[$email])->first();
         if (is_null($user)) {
             return response()->json(['status' => 'error', 'message' => 'Email salah'], 400);
@@ -45,8 +45,7 @@ class LoginController extends Controller
             return response()->json($jwtData, 400);
         }
         $data1 = ['email'=>$email,'number'=>$jwtData['number']];
-        $encryptionController->encryptRequest([]);
-        return response()->json(['status'=>'success','message'=>'login sukses silahkan masuk dashboard'])
+        return response()->json($aesController->encryptResponse(['status'=>'success','message'=>'login sukses silahkan masuk dashboard'], $request->input('key'), $request->input('iv')))
         ->cookie('token1',base64_encode(json_encode($data1)),time()+intval(env('JWT_ACCESS_TOKEN_EXPIRED')))
         ->cookie('token2',$jwtData['data']['token'],time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')))
         ->cookie('token3',$jwtData['data']['refresh'],time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')));

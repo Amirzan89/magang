@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id('id_refresh_token');
             $table->string('email');
             $table->longText('token');
+            $table->integer('number');
             $table->enum('status', ['aktif', 'logout'])->default('aktif');
             $table->timestamps();
             $table->unsignedBigInteger('id_auth');

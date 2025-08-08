@@ -7,20 +7,18 @@ use DateTime;
 class HMACController extends Controller
 {
     public function publicKeyHMAC(){
-        $hmacKey = base64_decode(Cache::get("hmac_pub_key"));
+        $hmacKey = Cache::get("hmac_pub_key");
         if(is_null($hmacKey)){
             $hmacKey = hash_hmac('sha256', now(), Str::random(32), true);
             Cache::put("hmac_pub_key", base64_encode($hmacKey));
         }
-        return bin2hex($hmacKey);
+        return $hmacKey;
     }
     public function genKeyHMAC($idUser){
         $hmacKey = Cache::get("hmac_key_user_{$idUser}");
         if(is_null($hmacKey)){
             $hmacKey = hash_hmac('sha256', $idUser . now(), Str::random(32), true);
             Cache::put("hmac_key_user_{$idUser}", base64_encode($hmacKey));
-        }else{
-            $hmacKey = base64_decode($hmacKey);
         }
         return $hmacKey;
     }
