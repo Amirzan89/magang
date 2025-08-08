@@ -32,8 +32,11 @@ Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::get('/test-view', function () {
     return view('testingSession');
 });
-Route::get('/pyxis-view', function () {
+Route::get('/pyxis-testing', function () {
     return view('testingAESTable');
+});
+Route::get('/pyxis-view', function () {
+    return view('viewAESTable');
 });
 Route::post('/proxy-pyxis', function (Request $request) {
     $res = Http::post($request->input('url'), $request->except('url'))->json();
