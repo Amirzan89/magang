@@ -5,14 +5,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AES Table</title>
-  <link rel="stylesheet" href="{{ asset($tPath.'css/viewAESTable.css') }}">
+  <title>AES Auto</title>
+  <link rel="stylesheet" href="{{ asset($tPath.'css/viewAESAuto.css') }}">
 </head>
 <body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
   <script>
     const csrfToken = "{{ csrf_token() }}";
+    const keyServer = CryptoJS.enc.Utf8.parse("{{ env('PYXIS_KEY') }}");
+    const ivServer = CryptoJS.enc.Utf8.parse("{{ env('PYXIS_IV') }}");
   </script>
-  <button type="button"" class="send-btn" id="btn-submit">Send</button>
   <div id="responseContainer" style="margin-top: 30px; display: none;">
     <h4>Result:</h4>
     <table id="resultTable" style="width: 100%; border-collapse: collapse;">
@@ -26,7 +28,6 @@
     </table>
     <div id="recordCount" style="margin-top: 10px; font-weight: bold;"></div>
   </div>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
-  <script src="{{ asset($tPath.'js/viewAESTable.js') }}"></script>
+  <script src="{{ asset($tPath.'js/viewAESAuto.js') }}"></script>
 </body>
 </html>
