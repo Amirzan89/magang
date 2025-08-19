@@ -44,7 +44,8 @@ function renderTable(response) {
         container.style.display = 'block';
     }
 }
-document.getElementById('btn-submit').onclick = function(){
+// document.getElementById('btn-submit').onclick = function(){
+document.addEventListener("DOMContentLoaded", () => {
     // const url = inpUrl.value;
     // const apiKey = inpApiKey.value;
     // const password = inpPassword.value;
@@ -166,4 +167,4 @@ document.getElementById('btn-submit').onclick = function(){
         }
     }
     return false;
-}
+})

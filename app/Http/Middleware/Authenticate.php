@@ -31,17 +31,17 @@ class Authenticate
             $prefPublic = ['/event'];
             if((in_array($currentPath, $publicPage) || !empty(array_filter($prefPublic, fn($prefix) => strpos($currentPath, $prefix) === 0))) && $request->isMethod('get')){
                 if(in_array(ltrim($path), $publicPage)){
-                    $response = $this->handleRedirect($request, 'success', '/page/dashboard');
+                    $response = $this->handleRedirect($request, 'success', '/dashboard');
                 }else{
                     $prefixes = ['/admin/download'];
                     $response = null;
                     foreach ($prefixes as $prefix) {
                         if ($prefix !== '' && strpos($path, $prefix) === 0) {
-                            $response = $this->handleRedirect($request, 'success', '/page/dashboard');
+                            $response = $this->handleRedirect($request, 'success', '/dashboard');
                         }
                     }
                     if (is_null($response) && $request->isMethod('get') && !in_array($path, ['/download'])) {
-                        $response = $this->handleRedirect($request, 'success', $path ?? '/page/dashboard');
+                        $response = $this->handleRedirect($request, 'success', $path ?? '/dashboard');
                     }
                 }
                 $cookies = $response->headers->getCookies();
@@ -163,7 +163,7 @@ class Authenticate
                 $request->request->remove('cipher');
             }
             //if cookie gone
-            $page = ['/page/dashboard', '/profil', '/admin', '/admin/tambah', '/rekap', '/rekap/tambah'];
+            $page = ['/dashboard', '/profil', '/admin', '/admin/tambah', '/rekap', '/rekap/tambah'];
             $pagePrefix = ['/admin', '/rekap'];
             if(Str::startsWith($currentPath, $pagePrefix) || in_array($currentPath,$page)){
                 if($request->hasCookie("token1")){

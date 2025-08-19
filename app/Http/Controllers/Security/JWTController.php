@@ -281,7 +281,7 @@ class JWTController extends Controller
         $currentMonth = now()->format('w-m-Y');
         if (Cache::get('jwt_key_month') !== $currentMonth) {
             File::
-            Cache::put('aes_key_month', $currentMonth);
+            Cache::put('aes_month', $currentMonth);
         }
         return ['status'=>'success','message'=>'ddd'];
     }

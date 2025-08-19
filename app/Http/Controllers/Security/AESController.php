@@ -14,13 +14,28 @@ class AESController extends Controller
         ]]);
     }
     public function genKeyAes(){
+        // $currentMonth = now()->format('m-Y');
+        // $cachedMonth = Cache::get('aes_month');
+        // $keyAES = Cache::get('aes_key');
+        // if($cachedMonth !== $currentMonth || !$keyAES){
+        //     $keyAES = bin2hex(random_bytes(32));
+        //     Cache::put('aes_key', $keyAES);
+        //     Cache::put('aes_month', $currentMonth);
+        // }
         $currentMonth = now()->format('m-Y');
-        $cachedMonth = Cache::get('aes_key_month');
+        $cachedMonth = Cache::get('aes_month');
         $keyAES = Cache::get('aes_key');
         if($cachedMonth !== $currentMonth || !$keyAES){
-            $keyAES = bin2hex(random_bytes(32));
-            Cache::put('aes_key', $keyAES);
-            Cache::put('aes_key_month', $currentMonth);
+            $keyAESBinary = random_bytes(32);
+            $keyAESHex = bin2hex($keyAESBinary);
+            Token::whereMonth('created_at', '<', now()->month)->delete();
+            Token::create([
+                'aes_key' => $keyAESHex,
+                'created_at' => now()
+            ]);
+            Cache::put('aes_key', $keyAESHex);
+            Cache::put('aes_month', $currentMonth);
+            $keyAES = $keyAESHex;
         }
         return $keyAES;
     }
@@ -32,13 +47,6 @@ class AESController extends Controller
         return ['status'=>'success','data'=>json_decode($decrypt, true)];
     }
     public function encryptResponse($data, $iv){
-        // if(now()->format('m') !== Cache::get('aes_key_month')){
-        //     $keyAES = random_bytes(32);
-        //     Token::orderBy()->where('created_at', )->delete();
-        //     Token::create(['aes_key' => $keyAES]);
-        //     Cache::put('aes_key_month', $keyAES);
-        //     $keyAES = Token::latest('created_at')->value('aes_key');
-        // }
         $encrypted = openssl_encrypt(json_encode($data), 'AES-256-CBC', hex2bin(Cache::get('aes_key')), OPENSSL_RAW_DATA, hex2bin($iv));
         return bin2hex($encrypted);
     }

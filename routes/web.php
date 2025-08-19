@@ -21,7 +21,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 Route::post('/por', );
-Route::get('/view-aes', function () {
+Route::get('/view-aes', function (){
     return view('testingAES');
 });
 Route::post('/fetch-token', [AESController::class, 'FirstTime']);
