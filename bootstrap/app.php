@@ -1,5 +1,4 @@
 <?php
-
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\Authorization;
 use Illuminate\Foundation\Application;
