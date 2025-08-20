@@ -1,30 +1,30 @@
-function renderTable(response) {
-    const container = document.getElementById('responseContainer');
-    const tbody = document.querySelector('#resultTable tbody');
-    const count = document.getElementById('recordCount');
-    tbody.innerHTML = '';
-    if (response.data && Array.isArray(response.data)) {
-        response.data.forEach(item => {
-        const row = document.createElement('tr');
-        const cell1 = document.createElement('td');
-        cell1.textContent = item.whcode?.trim() || '-';
-        cell1.style.padding = '8px';
-        cell1.style.borderBottom = '1px solid #ddd';
-        const cell2 = document.createElement('td');
-        cell2.textContent = item.warehouse?.trim() || '-';
-        cell2.style.padding = '8px';
-        cell2.style.borderBottom = '1px solid #ddd';
-        row.appendChild(cell1);
-        row.appendChild(cell2);
-        tbody.appendChild(row);
-        });
-        count.textContent = 'Total Records: ' + (response.totalrecords || response.data.length);
-        container.style.display = 'block';
-    } else {
-        tbody.innerHTML = '<tr><td colspan="2">No data found</td></tr>';
-        container.style.display = 'block';
-    }
-}
+// function renderTable(response) {
+//     const container = document.getElementById('responseContainer');
+//     const tbody = document.querySelector('#resultTable tbody');
+//     const count = document.getElementById('recordCount');
+//     tbody.innerHTML = '';
+//     if (response.data && Array.isArray(response.data)) {
+//         response.data.forEach(item => {
+//         const row = document.createElement('tr');
+//         const cell1 = document.createElement('td');
+//         cell1.textContent = item.whcode?.trim() || '-';
+//         cell1.style.padding = '8px';
+//         cell1.style.borderBottom = '1px solid #ddd';
+//         const cell2 = document.createElement('td');
+//         cell2.textContent = item.warehouse?.trim() || '-';
+//         cell2.style.padding = '8px';
+//         cell2.style.borderBottom = '1px solid #ddd';
+//         row.appendChild(cell1);
+//         row.appendChild(cell2);
+//         tbody.appendChild(row);
+//         });
+//         count.textContent = 'Total Records: ' + (response.totalrecords || response.data.length);
+//         container.style.display = 'block';
+//     } else {
+//         tbody.innerHTML = '<tr><td colspan="2">No data found</td></tr>';
+//         container.style.display = 'block';
+//     }
+// }
 document.addEventListener('DOMContentLoaded', async() => {
     var xhr = new XMLHttpRequest();
     var tableData = JSON.stringify({
@@ -37,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async() => {
     if((sessionStorage.aes_key == undefined) && (sessionStorage.hmac_key == undefined)){
         await handshakeRSA();
     }
-    await handshakeRSA();
     const encr = await encryptReq(tableData);
     var requestBody = {
         uniqueid: encr.iv,

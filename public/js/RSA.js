@@ -17,7 +17,7 @@ async function handshakeRSA(){
         const clientNonce = crypto.getRandomValues(new Uint8Array(16));
         const clientNonceB64 = btoa(String.fromCharCode(...clientNonce));
         const pubB64 = await genRsaPairSession();
-        const res = await fetch('/handsake-rsa', {
+        const res = await fetch('/handshake-rsa', {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json' },
             body: JSON.stringify({ clientPublicSpkiB64: pubB64, clientNonce: clientNonceB64 })

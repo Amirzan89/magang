@@ -56,9 +56,7 @@ Route::group(['prefix'=>'/pyxis'], function(){
         return view('testingQueryRSA');
     });
     Route::post('/query-rsa', [TestingRSAController::class, 'query_rsa']);
-    Route::post('/query-ecdh', [TestingSimpleController::class, 'query_ecdh']);
 });
 Route::post('/handsake-rsa', [TestingRSAController::class, 'handsake_rsa']);
-Route::post('/handsake-ecdh', [TestingSimpleController::class, 'handsake_ecdh']);
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
