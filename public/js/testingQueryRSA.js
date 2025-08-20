@@ -34,13 +34,10 @@ document.addEventListener('DOMContentLoaded', async() => {
         "sql": "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, eventname, eventdescription, startdate, enddate, quota, price, inclusion, imageicon_1, imageicon_2, imageicon_3, imageicon_4, imageicon_5, imageicon_6, imageicon_7, imageicon_8, imageicon_9 FROM event_schedule",
         "order": ""
     });
-    // if((sessionStorage.aes_key == undefined) && (sessionStorage.hmac_key == undefined)){
-    //     await handshakeRSA();
-    // }
+    if((sessionStorage.aes_key == undefined) && (sessionStorage.hmac_key == undefined)){
+        await handshakeRSA();
+    }
     await handshakeRSA();
-    console.log('wss bar sess')
-    // const ivServer = CryptoJS.enc.Utf8.parse(inpUniqueID.value);
-    // const encr = CryptoJS.AES.encrypt(tableData, keyServer, { iv: ivServer, mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString(CryptoJS.enc.Hex);
     const encr = await encryptReq(tableData);
     var requestBody = {
         uniqueid: encr.iv,
@@ -49,15 +46,16 @@ document.addEventListener('DOMContentLoaded', async() => {
     }
     xhr.open('POST', '/pyxis/query-rsa')
     xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
-    xhr.setRequestHeader('X-Sealed', sessionStorage.sealed);
+    xhr.setRequestHeader('X-Merseal', sessionStorage.merseal);
     xhr.setRequestHeader('Content-Type', 'application/json');
     xhr.send(JSON.stringify(requestBody));
-    xhr.onreadystatechange = function(){
+    xhr.onreadystatechange = async function(){
         if(xhr.readyState == XMLHttpRequest.DONE){
             if(xhr.status === 200){
                 const res = JSON.parse(xhr.responseText);
-                const responseDecrypted = CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(res.data) }, keyServer, { iv: ivServer }).toString(CryptoJS.enc.Utf8);
-                renderTable(JSON.parse(responseDecrypted))
+                const responseDecrypted = await decryptRes(res.data, encr.iv);
+                console.log('hasil decrypt response ', responseDecrypted)
+                // renderTable(JSON.parse(responseDecrypted))
             }else{
                 console.log(JSON.parse(xhr.responseText));
             }

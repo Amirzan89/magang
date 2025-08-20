@@ -25,12 +25,14 @@ Route::get('/view-aes', function (){
     return view('testingAES');
 });
 Route::post('/fetch-token', [AESController::class, 'FirstTime']);
-Route::get('/test/simple', [TestingSimpleController::class, 'tesss']);
-Route::post('/test/simple-encrypt', [TestingSimpleController::class, 'testEncrypt']);
-Route::post('/test/simple-decrypt', [TestingSimpleController::class, 'testDecrypt']);
-Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
-Route::get('/test-view', function (){
-    return view('testingSession');
+Route::group(['prefix'=>'/test'], function(){
+    Route::get('/simple', [TestingSimpleController::class, 'tesss']);
+    Route::post('/simple-encrypt', [TestingSimpleController::class, 'testEncrypt']);
+    Route::post('/simple-decrypt', [TestingSimpleController::class, 'testDecrypt']);
+    Route::get('/ping-session', [TestingSessionController::class, 'tes_ping']);
+    Route::get('/view', function (){
+        return view('testingSession');
+    });
 });
 Route::group(['prefix'=>'/pyxis'], function(){
     Route::get('/testing', function (){

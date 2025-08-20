@@ -1,8 +1,9 @@
 <?php
 namespace App\Http\Controllers\Services\Encryption;
 use App\Http\Controllers\Controller;
-use Error;
 use Illuminate\Http\Request;
+use InvalidArgumentException;
+use Error;
 class TestingSimpleController extends Controller
 {
     public function tesss(Request $request){
@@ -31,9 +32,27 @@ class TestingSimpleController extends Controller
         echo "IV  (base64)        : " . base64_encode($iv) . "<br>";
         echo "IV        : " . $iv . "<br>";
     }
+    private function normalizeKeyOrIv(string $input, int $expectedLength): string {
+        if(ctype_xdigit($input) && strlen($input) % 2 === 0){
+            $bin = hex2bin($input);
+            if(strlen($bin) === $expectedLength){
+                return $bin; // ✅ valid hex
+            }
+        }
+        if(preg_match('/^[A-Za-z0-9+\/=]+$/', $input)){
+            $bin = base64_decode($input, true);
+            if($bin !== false && strlen($bin) === $expectedLength){
+                return $bin; // ✅ valid base64
+            }
+        }
+        if(strlen($input) === $expectedLength){
+            return $input; // ✅ plain ASCII
+        }
+        throw new InvalidArgumentException("Input format tidak cocok untuk expected length $expectedLength");
+    }
     public function testEncrypt(Request $request){
         try{
-            $encrypted = openssl_encrypt($request->input('input'), 'AES-256-CBC', hex2bin($request->input('key')), OPENSSL_RAW_DATA, hex2bin($request->input('iv')));
+            $encrypted = openssl_encrypt($request->input('input'), 'AES-256-CBC', $this->normalizeKeyOrIv($request->input('key'), 32), OPENSSL_RAW_DATA, $this->normalizeKeyOrIv($request->input('iv'), 16));
             return response()->json(['status'=>'success','data'=>bin2hex($encrypted)]);
         }catch(Error $e){
             return response()->json($e, 500);
@@ -41,7 +60,7 @@ class TestingSimpleController extends Controller
     }
     public function testDecrypt(Request $request){
         try{
-            $decrypted = openssl_decrypt(hex2bin($request->input('chiper')), 'AES-256-CBC', hex2bin($request->input('key')), OPENSSL_RAW_DATA, hex2bin($request->input('iv')));
+            $decrypted = openssl_decrypt(hex2bin($request->input('chiper')), 'AES-256-CBC', $this->normalizeKeyOrIv($request->input('key'), 32), OPENSSL_RAW_DATA, $this->normalizeKeyOrIv($request->input('iv'), 16));
             return response()->json(['status'=>'success','data'=>$decrypted]);
         }catch(Error $e){
             return response()->json($e, 500);

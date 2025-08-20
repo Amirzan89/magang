@@ -1,9 +1,3 @@
-function hexToU8(hex) {
-    if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length % 2) throw new Error('bad hex');
-    const out = new Uint8Array(hex.length / 2);
-    for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i*2,2),16);
-    return out;
-}
 async function genRsaPairSession(){
     const { publicKey, privateKey } = await crypto.subtle.generateKey({ name: 'RSA-OAEP', modulusLength: 2048, publicExponent: new Uint8Array([1,0,1]), hash: 'SHA-256' }, true,['encrypt','decrypt']);
     const pkcs8 = await crypto.subtle.exportKey('pkcs8', privateKey);
@@ -13,6 +7,12 @@ async function genRsaPairSession(){
     return pubB64;
 }
 async function handshakeRSA(){
+    function hexToU8(hex) {
+        if (!/^[0-9a-fA-F]+$/.test(hex) || hex.length % 2) throw new Error('bad hex');
+        const out = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i*2,2),16);
+        return out;
+    }
     try{
         const clientNonce = crypto.getRandomValues(new Uint8Array(16));
         const clientNonceB64 = btoa(String.fromCharCode(...clientNonce));
@@ -24,12 +24,8 @@ async function handshakeRSA(){
         }).then(r => r.json());
         const pkcs8 = Uint8Array.from(atob(sessionStorage.rsa_priv), c => c.charCodeAt(0)).buffer;
         const priv = await crypto.subtle.importKey('pkcs8', pkcs8, { name: 'RSA-OAEP', hash: 'SHA-256' }, false, ['decrypt']);
-        // const wrapped = Uint8Array.from(atob(res.data.encKey), c => c.charCodeAt(0)).buffer;
-        console.log('isii priv', priv)
         const wrapped = hexToU8(res.data.encKey).buffer;
-        console.log('isii encc', wrapped)
         const result = new Uint8Array(await crypto.subtle.decrypt({ name: 'RSA-OAEP' }, priv, wrapped));
-        console.log('resultt handsake', result)
         // parse payload: [aes32 | hmac32 | keyId16 | clientNonce16 | serverNonce16 | exp8]
         let off=0;
         const aes = result.slice(off, off+=32);
@@ -41,18 +37,12 @@ async function handshakeRSA(){
         if (btoa(String.fromCharCode(...clientNonce)) !== btoa(String.fromCharCode(...clientNonceEcho))) {
             throw new Error('nonce mismatch');
         }
-        sessionStorage.sealed = res.data.sealed;
+        sessionStorage.merseal = res.data.merseal;
         sessionStorage.keyId = [...keyIdBytes].map(x=>x.toString(16).padStart(2,'0')).join('');
         sessionStorage.serverNonce = btoa(String.fromCharCode(...serverNonceBytes));
         sessionStorage.aes_key = [...aes].map(x=>x.toString(16).padStart(2,'0')).join('');
         sessionStorage.hmac_key = [...hmac].map(x=>x.toString(16).padStart(2,'0')).join('');
         sessionStorage.key_exp = expMs.toString();
-        console.log('sealed', sessionStorage.sealed)
-        console.log('keyId', sessionStorage.keyId)
-        console.log('serverNonce', sessionStorage.serverNonce)
-        console.log('aess', sessionStorage.aes_key)
-        console.log('hmac_key', sessionStorage.hmac_key)
-        console.log('key_exp', sessionStorage.key_exp)
     }catch(error){
         console.log('error', error);
     }
