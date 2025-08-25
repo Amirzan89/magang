@@ -1,48 +1,76 @@
 <?php
-
 namespace App\Models;
-
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-
-class User extends Authenticatable
+use Illuminate\Database\Eloquent\Model;
+class User extends Model
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
-
+    use HasFactory;
+    protected $table = "users";
+    protected $primaryKey = "id_user";
+    public $incrementing = true;
+    protected $keyType = 'integer';
+    public $timestamps = true;
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'name',
         'email',
         'password',
+        'uuid',
+        'fcm_token',
+        'fcm_token_updated_at',
+        'device_id',
+        'device_type',
+        'nama_user',
+        'jenis_kelamin',
+        'no_telpon',
+        'alamat',
+        'no_rekening',
+        'email_verified_at',
+        'created_at',
+        'updated_at',
+        'id_auth'
     ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function fromVerifikasi()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(VerifikasiUser::class, 'id_verifikasi_user');
+    }
+    public function fromPesanan()
+    {
+        return $this->hasMany(Pesanan::class, 'id_pesanan');
+    }
+    public function toAuth()
+    {
+        return $this->belongsTo(Auth::class, 'id_auth');
+    }
+    /**
+     * Update FCM token untuk user ini
+     */
+    public function updateFcmToken($fcmToken, $deviceId = null, $deviceType = null)
+    {
+        $this->update([
+            'fcm_token' => $fcmToken,
+            'fcm_token_updated_at' => now(),
+            'device_id' => $deviceId,
+            'device_type' => $deviceType,
+        ]);
+        
+        return $this;
+    }
+    /**
+     * Check apakah FCM token masih valid (tidak expired)
+     */
+    public function isFcmTokenValid()
+    {
+        if (!$this->fcm_token) {
+            return false;
+        }
+        
+        // FCM token dianggap expired kalau lebih dari 30 hari tidak update
+        return $this->fcm_token_updated_at && 
+               $this->fcm_token_updated_at->diffInDays(now()) <= 30;
     }
 }

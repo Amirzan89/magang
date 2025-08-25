@@ -5,7 +5,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AES Table</title>
+  <title>AES Request Form</title>
   <link rel="stylesheet" href="{{ asset($tPath.'css/viewAESTable.css') }}">
 </head>
 <body>
