@@ -22,7 +22,7 @@ Route::get('/', function () {
 });
 Route::post('/por', );
 Route::get('/view-aes', function (){
-    return view('testingAES');
+    return view('testing.testingAES');
 });
 // Route::post('/fetch-token', [AESController::class, 'FirstTime']);
 Route::group(['prefix'=>'/test'], function(){
@@ -31,12 +31,12 @@ Route::group(['prefix'=>'/test'], function(){
     Route::post('/simple-decrypt', [TestingSimpleController::class, 'testDecrypt']);
     Route::get('/ping-session', [TestingSessionController::class, 'tes_ping']);
     Route::get('/view', function (){
-        return view('testingSession');
+        return view('testing.testingSession');
     });
 });
 Route::group(['prefix'=>'/pyxis'], function(){
     Route::get('/testing', function (){
-        return view('testingAESTable');
+        return view('testing.testingAESTable');
     });
     Route::get('/view', function (){
         return view('viewAESTable');
@@ -53,9 +53,12 @@ Route::group(['prefix'=>'/pyxis'], function(){
         return response()->json(['status' => $res['code'] ? 'success' : 'error', 'data' => $res['message']], $res['code']);
     });
     Route::get('/test-query', function (){
-        return view('testingQueryRSA');
+        return view('testing.testingQueryRSA');
     });
     Route::post('/query-rsa', [TestingRSAController::class, 'query_rsa']);
+});
+Route::get('/tailwind', function (){
+    return view('testing.tailwind');
 });
 Route::post('/handshake-rsa', [TestingRSAController::class, 'handshake_rsa']);
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);

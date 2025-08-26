@@ -1,11 +1,16 @@
 @import 'tailwindcss';
 
+/* * The @source directive tells Tailwind to scan these directories for classes.
+ * This is crucial for the JIT engine to work correctly.
+ */
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+/* * The @plugin directive loads the DaisyUI plugin.
+ * You can also define themes within this directive.
+ */
+@plugin "daisyui" {
+    prefix: 'd-';
 }
