@@ -24,7 +24,7 @@ $tPath = app()->environment('local') ? '' : '';
             background: linear-gradient(45deg, rgba(0, 0, 0, 1) 13%, rgba(84, 32, 180, 1) 100%);
             filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#000000CC", endColorstr="#5420B400", GradientType=0);
         }
-        section:nth-of-type(2) > div:not(.cards):not(#bg-cta){
+        section:nth-of-type(2) > div:not(.cards-container):not(#bg-cta){
             background: #8C44E4;
             background: -webkit-linear-gradient(90deg, rgba(140, 68, 228, 1) 0%, rgba(182, 83, 222, 1) 100%);
             background: -moz-linear-gradient(90deg, rgba(140, 68, 228, 1) 0%, rgba(182, 83, 222, 1) 100%);
@@ -36,6 +36,9 @@ $tPath = app()->environment('local') ? '' : '';
     </style>
 </head>
 <body>
+    <script>
+        const csrfToken = "{{ csrf_token() }}";
+    </script>
     <header class="fixed top-0 left-0 w-full" style="z-index: 9999; height: 70px;">
         <div class="relative left-1/2 -translate-x-1/2 d-navbar d-bg-base-100 d-shadow-sm py-3 h-full" style="width: 95%">
             <div class="d-navbar-start">
@@ -79,65 +82,54 @@ $tPath = app()->environment('local') ? '' : '';
             <div class="bg-section-1 absolute top-0 left-0 w-full h-full"></div>
             <img src="{{ asset($tPath.'assets/img/cele-3.png') }}" alt="" class="absolute right-0"></img>
         </div>
-        <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 self-center w-[90%]">
-        {{-- <ul class="cards self-center grid  bg-red-500 h-full" style="width: 90%"> --}}
-            <li class="card bg-base-100 w-96 shadow-sm">
-                <figure>
-                    <img
-                    src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
-                    alt="Shoes" />
-                </figure>
-                <div class="card-body">
-                    <h2 class="card-title">Card Title</h2>
-                    <p>A card component has a figure, a body part, and inside body there are title and actions parts</p>
-                    <div class="card-actions justify-end">
-                    <button class="btn btn-primary">Buy Now</button>
-                    </div>
-                </div>
-            </li>
-            <li class="card bg-base-100 w-96 shadow-sm">
-                <figure>
-                    <img
-                    src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
-                    alt="Shoes" />
-                </figure>
-                <div class="card-body">
-                    <h2 class="card-title">Card Title</h2>
-                    <p>A card component has a figure, a body part, and inside body there are title and actions parts</p>
-                    <div class="card-actions justify-end">
-                    <button class="btn btn-primary">Buy Now</button>
-                    </div>
-                </div>
-            </li>
-            <li class="card bg-base-100 w-96 shadow-sm">
-                <figure>
-                    <img
-                    src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
-                    alt="Shoes" />
-                </figure>
-                <div class="card-body">
-                    <h2 class="card-title">Card Title</h2>
-                    <p>A card component has a figure, a body part, and inside body there are title and actions parts</p>
-                    <div class="card-actions justify-end">
-                    <button class="btn btn-primary">Buy Now</button>
-                    </div>
-                </div>
-            </li>
-            <li class="card bg-base-100 w-96 shadow-sm">
-                <figure>
-                    <img
-                    src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
-                    alt="Shoes" />
-                </figure>
-                <div class="card-body">
-                    <h2 class="card-title">Card Title</h2>
-                    <p>A card component has a figure, a body part, and inside body there are title and actions parts</p>
-                    <div class="card-actions justify-end">
-                    <button class="btn btn-primary">Buy Now</button>
-                    </div>
-                </div>
-            </li>
-        </ul>
+        <div x-data="cardsList()" x-init="init()" class="self-center w-[90%] cards-container">
+            {{-- <!-- Search (opsional) -->
+            <div class="flex items-center gap-3 mb-3">
+                <input x-model.debounce.300ms="query" type="text" placeholder="Cari venue…" class="input input-bordered w-full max-w-md">
+                <button class="btn" @click="reset()">Reset</button>
+            </div> --}}
+            <ul class="cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5 self-center w-[90%]">
+                <!-- Skeleton loading -->
+                <template x-if="loading && items.length === 0">
+                    <template x-for="i in 6" :key="i">
+                    <li class="card bg-base-100 w-96 shadow-sm animate-pulse">
+                        <div class="h-48 bg-base-200"></div>
+                        <div class="card-body">
+                        <div class="h-5 bg-base-200 rounded w-2/3"></div>
+                        <div class="h-4 bg-base-200 rounded w-full mt-2"></div>
+                        <div class="h-10 bg-base-200 rounded mt-4"></div>
+                        </div>
+                    </li>
+                    </template>
+                </template> 
+                <!-- Real items -->
+                <template x-for="(item, idx) in filtered" :key="String(item.id)">
+                    <li class="card bg-base-100 w-96 shadow-sm">
+                        <figure>
+                            <img :src="item.imageicon_1" :alt="item.title" loading="lazy" />
+                        </figure>
+                        <div class="card-body">
+                            <h2 class="card-title" x-text="item.eventname"></h2>
+                            <p x-text="item.startdate"></p>
+                            <div class="card-actions justify-between items-center">
+                                <span class="font-semibold" x-text="formatPrice(item.price)"></span>
+                                <button class="btn btn-primary" @click="buy(item)">Buy Now</button>
+                            </div>
+                        </div>
+                    </li>
+                </template>
+            </ul>
+            <!-- Error -->
+            <div class="alert alert-error mt-4" x-show="error" x-text="error"></div>
+            <!-- Load more -->
+            <div class="mt-6 flex justify-center">
+                <button class="btn" 
+                        @click="load()" 
+                        :disabled="loading || !hasMore" 
+                        x-text="hasMore ? (loading ? 'Loading…' : 'Load more') : 'No more data'">
+                </button>
+            </div>
+        </div>
         <div class="sm:h-30 xl:h-40 relative flex flex-row justify-evenly overflow-y-visible">
             <img src="{{ asset($tPath.'assets/img/image-3.png') }}" alt="" class="h-70 self-end"></img>
             <div class="w-fit h-3/4 relative top-1/2 -translate-y-1/2 flex flex-col items-center text-white">
@@ -156,6 +148,9 @@ $tPath = app()->environment('local') ? '' : '';
         <div></div>
     </footer>
     {{-- @include('page.Components.preloader') --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <script src="{{ asset($tPath.'js/RSA.js') }}"></script>
+    <script src="{{ asset($tPath.'js/encryption.js') }}"></script>
     <script src="{{ asset($tPath.'js/home.js') }}"></script>
 </body>
 </html>

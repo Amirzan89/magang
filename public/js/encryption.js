@@ -1,21 +1,3 @@
-const pingFirstTime = async () => {
-    const response = await fetch('/fetch-token', {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
-    });
-    if (!response.ok) {
-        const error = await response.json();
-        console.error('Ping failed', error);
-        return;
-    }
-    const res = await response.json();
-    sessionStorage.aes_key = res.data.aes_key;
-    sessionStorage.hmac_key = res.data.hmac_key;
-}
 const genIV = async(idUser) => {
     const encoder = new TextEncoder();
     const hmacKey = atob(sessionStorage.hmac_key);
@@ -32,10 +14,15 @@ const genIV = async(idUser) => {
     return new Uint8Array(await crypto.subtle.sign('HMAC', cryptoKey, mergedInput)).slice(0, 16);
 }
 const encryptReq = async (requestBody) => {
-    const ivHex = [...await genIV()].map(b => b.toString(16).padStart(2, "0")).join("");
-    const encrypted = CryptoJS.AES.encrypt(requestBody, CryptoJS.enc.Hex.parse(sessionStorage.aes_key), { iv: CryptoJS.enc.Hex.parse(ivHex), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString(CryptoJS.enc.Hex);
-    return { data: encrypted, iv: ivHex };
+    const iv = await genIV();
+    const cipherHex = CryptoJS.AES.encrypt(requestBody, CryptoJS.enc.Hex.parse(sessionStorage.aes_key), { iv: CryptoJS.enc.Hex.parse(hexCus.enc(iv)), mode: CryptoJS.mode.CBC, padding: CryptoJS.pad.Pkcs7 }).ciphertext.toString(CryptoJS.enc.Hex);
+    const hmacKey = await crypto.subtle.importKey('raw', hexCus.dec(sessionStorage.hmac_key), { name:'HMAC', hash:'SHA-256' }, false, ['sign']);
+    const payload = new Uint8Array(iv.length + (cipherHex.length/2));
+    payload.set(iv, 0);
+    payload.set(hexCus.dec(cipherHex), iv.length);
+    const mac = new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, payload));
+    return { iv: hexCus.enc(iv), data: cipherHex, mac: hexCus.enc(mac) };
 }
 const decryptRes = (cipher, iv) => {
-    return CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(cipher) }, CryptoJS.enc.Hex.parse(sessionStorage.aes_key), { iv: CryptoJS.enc.Hex.parse(iv) }).toString(CryptoJS.enc.Utf8);
+    return JSON.parse(CryptoJS.AES.decrypt({ ciphertext: CryptoJS.enc.Hex.parse(cipher) }, CryptoJS.enc.Hex.parse(sessionStorage.aes_key), { iv: CryptoJS.enc.Hex.parse(iv) }).toString(CryptoJS.enc.Utf8));
 }
