@@ -13,4 +13,5 @@
  */
 @plugin "daisyui" {
     prefix: 'd-';
+    themes: light --default;
 }
