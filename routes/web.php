@@ -9,9 +9,7 @@ use App\Http\Controllers\UserController;
 
 use App\Http\Controllers\Services\Encryption\TestingSimpleController;
 use App\Http\Controllers\Services\Encryption\TestingSessionController;
-use App\Http\Controllers\Services\Encryption\TestingRSAController;
-
-// use App\Http\Controllers\Services\Encryption\TestingRSAController;
+use App\Http\Controllers\Security\RSAController;
 
 use App\Http\Controllers\Pages\HomeController;
 
@@ -20,7 +18,6 @@ use App\Http\Controllers\Pages\HomeController;
 Route::get('/view-aes', function(){
     return view('testing.testingAES');
 });
-// Route::post('/fetch-token', [AESController::class, 'FirstTime']);
 Route::group(['prefix'=>'/test'], function(){
     Route::get('/simple', [TestingSimpleController::class, 'tesss']);
     Route::post('/simple-encrypt', [TestingSimpleController::class, 'testEncrypt']);
@@ -51,15 +48,15 @@ Route::group(['prefix'=>'/pyxis'], function(){
     Route::get('/test-query', function(){
         return view('testing.testingQueryRSA');
     });
-    Route::post('/query-rsa', [TestingRSAController::class, 'query_rsa']);
+    Route::post('/query-rsa', [RSAController::class, 'query_rsa']);
 });
 Route::get('/tailwind', function(){
     return view('testing.tailwind');
 });
-Route::post('/handshake-rsa', [TestingRSAController::class, 'handshake_rsa']);
+Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
-Route::post('/handshake-rsa', [TestingRSAController::class, 'handshake_rsa']);
+Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
 
 
 

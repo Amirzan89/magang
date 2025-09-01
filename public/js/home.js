@@ -53,7 +53,7 @@ document.addEventListener('alpine:init', () => {
                     chiper: encr.data,
                     mac: encr.mac,
                 }
-                xhr.open('POST', '/pyxis/query-rsa')
+                xhr.open('POST', '/')
                 xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
                 xhr.setRequestHeader('X-Merseal', sessionStorage.merseal);
                 xhr.setRequestHeader('Content-Type', 'application/json');

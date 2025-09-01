@@ -137,8 +137,8 @@ class Authenticate
             unset($decoded);
             $resultData = app()->make(AESController::class)->decryptRequest($request->input('cipher'), $request->input('iv'));
             if($resultData['status'] == 'error'){
-                $codeRes = $resultData['code'];
-                unset($resultData['code']);
+                $codeRes = $resultData['statusCode'];
+                unset($resultData['statusCode']);
                 return response()->json($resultData, $codeRes);
             }
             $request->merge(array_merge(['user_auth' => $userAuth], $resultData['data']));
@@ -155,8 +155,8 @@ class Authenticate
             if(!$request->isMethod('GET')){
                 $resultData = app()->make(AESController::class)->decryptRequest($request->input('cipher'), $request->input('iv'));
                 if($resultData['status'] == 'error'){
-                    $codeRes = $resultData['code'];
-                    unset($resultData['code']);
+                    $codeRes = $resultData['statusCode'];
+                    unset($resultData['statusCode']);
                     return response()->json($resultData, $codeRes);
                 }
                 $request->merge($resultData['data']);

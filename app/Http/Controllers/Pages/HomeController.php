@@ -1,20 +1,35 @@
 <?php
 namespace App\Http\Controllers\Pages;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\Services\EventController AS ServiceEventController;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 class HomeController extends Controller
 {
     public function showHome(Request $request){
-        $fetch = app()->make(ServiceEventController::class)->dataCacheFile(null, 'get_limit', null, ['nama_event', 'tanggal_awal', 'tanggal_akhir']);
-        $dataShow = [
-            'artikel' => array_map(function($item){
-                $item['created_at'] = Carbon::parse($item['created_at'])->translatedFormat('l, d F Y');
-                return $item;
-            }, app()->make(ServiceArtikelController::class)->dataCacheFile(null, 'get_limit', 3, ['judul', 'foto', 'created_at'], null, true) ?? []),
-        ];
-        return view('page.home',$dataShow);
+        $resMerseal = app()->make(AESController::class)->mersealToken($request);
+        if($resMerseal['status'] == 'error'){
+            $codeRes = $resMerseal['statusCode'];
+            unset($resMerseal['statusCode']);
+            return response()->json($resMerseal, $codeRes);
+        }
+        $resMerseal = $resMerseal['data'];
+        $reqDec = app()->make(AESController::class)->decryptRequest($request->input('chiper'), $resMerseal['key'], $resMerseal['iv']);
+        if($reqDec['status'] == 'error'){
+            $codeRes = $reqDec['statusCode'];
+            unset($reqDec['statusCode']);
+            return response()->json($reqDec, $codeRes);
+        }
+        $reqDec = $reqDec['data'];
+        $resultData = app()->make(ServiceEventController::class)->dataCacheFile('get_limit', null, ['nama_event', 'tanggal_awal', 'tanggal_akhir'], null, $reqDec);
+        if($resultData['status'] == 'error'){
+            $codeRes = $resultData['statusCode'];
+            unset($resultData['statusCode']);
+            return response()->json($resultData, $codeRes);
+        }
+        $enc = app()->make(AESController::class)->encryptResponse($resultData['data'], $resMerseal['key'], $resMerseal['iv']);
+        return response()->json(['status'=>'success','data'=>$enc]);
     }
     public function showArtikel(Request $request, $rekomendasi = null){
         $artikel = array_map(function($item){
