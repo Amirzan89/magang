@@ -1,6 +1,7 @@
 <?php
 // use App\Http\Middleware\Authenticate;
 // use App\Http\Middleware\Authorization;
+use App\Http\Middleware\DecryptResponse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // 'auth' => Authenticate::class,
             // 'authorized' => Authorization::class,
         ]);
+        $middleware->append(DecryptResponse::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

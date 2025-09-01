@@ -50,7 +50,7 @@ document.addEventListener('alpine:init', () => {
                 const encr = await encryptReq(tableData);
                 var requestBody = {
                     uniqueid: encr.iv,
-                    chiper: encr.data,
+                    cipher: encr.data,
                     mac: encr.mac,
                 }
                 xhr.open('POST', '/')

@@ -44,7 +44,7 @@ class EventController extends Controller
             //if file is delete will make new json file
             $eventData = $this->fetchEvents($reqData);
             foreach($eventData as &$item){
-                unset($item['id_konsultasi']);
+                unset($item['id_event']);
             }
             if(!file_put_contents(self::$jsonFile,json_encode($eventData, JSON_PRETTY_PRINT))){
                 return ['status'=>'error','message'=>'Gagal menyimpan file sistem'];
@@ -54,7 +54,7 @@ class EventController extends Controller
             $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
             $result = null;
             foreach($jsonData as $key => $item){
-                if(isset($item['id_konsultasi']) && $item['id_konsultasi'] == $idEvent){
+                if(isset($item['id_event']) && $item['id_event'] == $idEvent){
                     $result = $jsonData[$key];
                 }
             }

@@ -8,27 +8,13 @@ use Carbon\Carbon;
 class HomeController extends Controller
 {
     public function showHome(Request $request){
-        $resMerseal = app()->make(AESController::class)->mersealToken($request);
-        if($resMerseal['status'] == 'error'){
-            $codeRes = $resMerseal['statusCode'];
-            unset($resMerseal['statusCode']);
-            return response()->json($resMerseal, $codeRes);
-        }
-        $resMerseal = $resMerseal['data'];
-        $reqDec = app()->make(AESController::class)->decryptRequest($request->input('chiper'), $resMerseal['key'], $resMerseal['iv']);
-        if($reqDec['status'] == 'error'){
-            $codeRes = $reqDec['statusCode'];
-            unset($reqDec['statusCode']);
-            return response()->json($reqDec, $codeRes);
-        }
-        $reqDec = $reqDec['data'];
-        $resultData = app()->make(ServiceEventController::class)->dataCacheFile('get_limit', null, ['nama_event', 'tanggal_awal', 'tanggal_akhir'], null, $reqDec);
+        $resultData = app()->make(ServiceEventController::class)->dataCacheFile('get_limit', null, ['nama_event', 'tanggal_awal', 'tanggal_akhir'], null, $request->except(['key', 'iv']));
         if($resultData['status'] == 'error'){
             $codeRes = $resultData['statusCode'];
             unset($resultData['statusCode']);
             return response()->json($resultData, $codeRes);
         }
-        $enc = app()->make(AESController::class)->encryptResponse($resultData['data'], $resMerseal['key'], $resMerseal['iv']);
+        $enc = app()->make(AESController::class)->encryptResponse($resultData['data'], $request->input('key'), $request->input('iv'));
         return response()->json(['status'=>'success','data'=>$enc]);
     }
     public function showArtikel(Request $request, $rekomendasi = null){
