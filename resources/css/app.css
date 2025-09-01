@@ -1,5 +1,7 @@
 @import 'tailwindcss';
-
+@import "flowbite/src/themes/default";
+@plugin "flowbite/plugin";
+@source "../../node_modules/flowbite";
 /* * The @source directive tells Tailwind to scan these directories for classes.
  * This is crucial for the JIT engine to work correctly.
  */
@@ -8,13 +10,6 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-/* * The @plugin directive loads the DaisyUI plugin.
- * You can also define themes within this directive.
- */
-@plugin "daisyui" {
-    prefix: 'd-';
-    themes: light --default;
-}
 :root{
     --animate-pulse: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

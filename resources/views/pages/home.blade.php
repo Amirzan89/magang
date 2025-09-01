@@ -36,15 +36,15 @@ $tPath = app()->environment('local') ? '' : '';
     </style>
 </head>
 <body>
+    @yield('content')
     <script>
         const csrfToken = "{{ csrf_token() }}";
     </script>
-    <header class="fixed top-0 left-0 w-full" style="z-index: 9999; height: 70px;">
+    {{-- <header class="fixed top-0 left-0 w-full" style="z-index: 9999; height: 70px;">
         <div class="relative left-1/2 -translate-x-1/2 d-navbar d-bg-base-100 d-shadow-sm py-3 h-full" style="width: 95%">
             <div class="d-navbar-start">
                 <div class="d-dropdown">
                     <div tabindex="0" role="button" class="d-btn d-btn-ghost lg:d-hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="d-h-5 d-w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/></svg>
                     </div>
                     <ul tabindex="0" class="d-menu d-menu-sm d-dropdown-content d-bg-base-100 d-rounded-box d-z-1 d-mt-3 d-w-52 d-p-2 d-shadow text-white"">
                         <li><a href="/">Events</a></li>
@@ -63,9 +63,17 @@ $tPath = app()->environment('local') ? '' : '';
                     <li><a href="/" >Contact</a></li>
                 </ul>
             </div>
-            <div class="d-navbar-end">
-                <a href="/login" class="d-btn d-btn-outline ">Login</a>
+            <div class="">
+                <a href="/login" class="rounded-xl"><span>Login</span></a>
             </div>
+        </div>
+    </header> --}}
+    <header class="fixed top-0 left-0 w-full" style="z-index: 9999; height: 70px;">
+        <div class="dropdown-menu">
+            <a class="/"><img src="{{ asset($tPath.'assets/icon/logowhite.png') }}" alt="" class=""></img></a>
+        </div>
+        <div>
+            <div></div>
         </div>
     </header>
     <section class="relative h-screen">
@@ -111,7 +119,7 @@ $tPath = app()->environment('local') ? '' : '';
                     </div>
                 </div>
             </div>
-            <ul class="cards self-center bg-red-500" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); grid-column-gap: 30px; grid-row-gap: 30px;">
+            {{-- <ul class="cards self-center bg-red-500" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); grid-column-gap: 30px; grid-row-gap: 30px;">
                 <!-- Skeleton loading -->
                 <template x-if="loading && items.length === 0">
                     <template x-for="i in 6" :key="i">
@@ -141,7 +149,7 @@ $tPath = app()->environment('local') ? '' : '';
                         </div>
                     </li>
                 </template>
-            </ul>
+            </ul> --}}
             <a href="/events" class="relative left-1/2 -translate-x-1/2 mt-10 text-[#3D37F1] !border-[#3D37F1] rounded-2xl hover:bg-[#3D37F1] hover:text-white">See All Events</a>
         </div>
         <div class="sm:h-30 xl:h-40 flex flex-row mt-20 justify-evenly overflow-y-visible">
@@ -163,6 +171,7 @@ $tPath = app()->environment('local') ? '' : '';
         <div></div>
     </footer>
     {{-- @include('page.Components.preloader') --}}
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <script src="{{ asset($tPath.'js/RSA.js') }}"></script>
     <script src="{{ asset($tPath.'js/encryption.js') }}"></script>
