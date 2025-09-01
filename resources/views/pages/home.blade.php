@@ -77,22 +77,45 @@ $tPath = app()->environment('local') ? '' : '';
             <div class="bg-carousel"></div>
         </div>
     </section>
-    <section class="relative h-screen flex flex-col justify-between">
+    <section class="relative min-h-screen h-fit flex flex-col justify-between border-black">
         <div id="bg-cta" class="x">
             <div class="bg-section-1 absolute top-0 left-0 w-full h-full"></div>
             <img src="{{ asset($tPath.'assets/img/cele-3.png') }}" alt="" class="absolute right-0"></img>
         </div>
-        <div x-data="cardsList()" x-init="init()" class="self-center w-[90%] cards-container">
-            {{-- <!-- Search (opsional) -->
-            <div class="flex items-center gap-3 mb-3">
-                <input x-model.debounce.300ms="query" type="text" placeholder="Cari venue…" class="input input-bordered w-full max-w-md">
-                <button class="btn" @click="reset()">Reset</button>
-            </div> --}}
-            <ul class="cards grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5 self-center w-[90%]">
+        <div x-data="cardsList()" x-init="init()" class="relative w-[90%] flex-1 self-center cards-container">
+            <div class="absolute -translate-y-1/2 w-full flex flex-row justify-between items-center">
+                <div class="bg-white rounded-3xl">
+                    <h2 class="text-[#242565] xl:text-3xl mt-4 mb-4 ml-6 mr-6">Upcoming Event</h2>
+                </div>
+                <div class="flex flex-row h-fit gap-5">
+                    <div class="d-dropdown d-dropdown-bottom bg-white rounded-xl">
+                        <div tabindex="0" role="button" class="mt-2 mb-2 ml-4 mr-4">WeekDays</div>
+                        <ul tabindex="0" class="d-dropdown-content d-menu d-bg-base-100 d-rounded-box d-z-1 d-w-52 d-p-2 d-shadow-sm">
+                            <li><a>Item 1</a></li>
+                            <li><a>Item 2</a></li>
+                        </ul>
+                    </div>
+                    <div class="d-dropdown d-dropdown-bottom bg-white rounded-xl">
+                        <div tabindex="0" role="button" class="mt-2 mb-2 ml-4 mr-4">Popular</div>
+                        <ul tabindex="0" class="d-dropdown-content d-menu d-bg-base-100 d-rounded-box d-z-1 d-w-52 d-p-2 d-shadow-sm">
+                            <li><a>Item 1</a></li>
+                            <li><a>Item 2</a></li>
+                        </ul>
+                    </div>
+                    <div class="d-dropdown d-dropdown-bottom bg-white rounded-xl">
+                        <div tabindex="0" role="button" class="mt-2 mb-2 ml-4 mr-4">Latest</div>
+                        <ul tabindex="0" class="d-dropdown-content d-menu d-bg-base-100 d-rounded-box d-z-1 d-w-52 d-p-2 d-shadow-sm">
+                            <li><a>Item 1</a></li>
+                            <li><a>Item 2</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <ul class="cards self-center bg-red-500" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); grid-column-gap: 30px; grid-row-gap: 30px;">
                 <!-- Skeleton loading -->
                 <template x-if="loading && items.length === 0">
                     <template x-for="i in 6" :key="i">
-                    <li class="card bg-base-100 w-96 shadow-sm animate-pulse">
+                    <li class="card bg-base-100 shadow-sm animate-pulse">
                         <div class="h-48 bg-base-200"></div>
                         <div class="card-body">
                         <div class="h-5 bg-base-200 rounded w-2/3"></div>
@@ -104,8 +127,8 @@ $tPath = app()->environment('local') ? '' : '';
                 </template> 
                 <!-- Real items -->
                 <template x-for="(item, idx) in filtered" :key="String(item.id)">
-                    <li class="card bg-base-100 w-96 shadow-sm">
-                        <figure>
+                    <li class="card bg-base-100 shadow-sm rounded-2xl">
+                        <figure class="h-1/3">
                             <img :src="item.imageicon_1" :alt="item.title" loading="lazy" />
                         </figure>
                         <div class="card-body">
@@ -119,18 +142,9 @@ $tPath = app()->environment('local') ? '' : '';
                     </li>
                 </template>
             </ul>
-            <!-- Error -->
-            <div class="alert alert-error mt-4" x-show="error" x-text="error"></div>
-            <!-- Load more -->
-            <div class="mt-6 flex justify-center">
-                <button class="btn" 
-                        @click="load()" 
-                        :disabled="loading || !hasMore" 
-                        x-text="hasMore ? (loading ? 'Loading…' : 'Load more') : 'No more data'">
-                </button>
-            </div>
+            <a href="/events" class="relative left-1/2 -translate-x-1/2 mt-10 text-[#3D37F1] !border-[#3D37F1] rounded-2xl hover:bg-[#3D37F1] hover:text-white">See All Events</a>
         </div>
-        <div class="sm:h-30 xl:h-40 relative flex flex-row justify-evenly overflow-y-visible">
+        <div class="sm:h-30 xl:h-40 flex flex-row mt-20 justify-evenly overflow-y-visible">
             <img src="{{ asset($tPath.'assets/img/image-3.png') }}" alt="" class="h-70 self-end"></img>
             <div class="w-fit h-3/4 relative top-1/2 -translate-y-1/2 flex flex-col items-center text-white">
                 <h2 class="">Add Your Loving Event</h2>
@@ -139,9 +153,10 @@ $tPath = app()->environment('local') ? '' : '';
             </div>
         </div>
     </section>
-    <section class="">
-        <div>
-            <div></div>
+    <section class="relative min-h-screen h-fit flex flex-col justify-between border-black border-4">
+        <div id="bg-cta" class="x">
+            <div class="bg-section-1 absolute top-0 left-0 w-full h-full"></div>
+            <img src="{{ asset($tPath.'assets/img/cele-3.png') }}" alt="" class="absolute right-0"></img>
         </div>
     </section>
     <footer>
