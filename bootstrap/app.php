@@ -17,7 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // 'auth' => Authenticate::class,
             // 'authorized' => Authorization::class,
         ]);
-        $middleware->append(DecryptResponse::class);
+        $middleware->prepend(DecryptResponse::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
