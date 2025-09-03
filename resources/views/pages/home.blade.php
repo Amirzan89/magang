@@ -25,11 +25,11 @@ $tPath = app()->environment('local') ? '' : '';
             filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#ED4690", endColorstr="#5522CC", GradientType=0);
         }
         #bg-hero-carousel{
-            background: RGBA(0, 0, 0, 0.8);
+            background: #000000;
             background: -webkit-linear-gradient(45deg, rgba(0, 0, 0, 1) 13%, rgba(84, 32, 180, 1) 100%);
             background: -moz-linear-gradient(45deg, rgba(0, 0, 0, 1) 13%, rgba(84, 32, 180, 1) 100%);
             background: linear-gradient(45deg, rgba(0, 0, 0, 1) 13%, rgba(84, 32, 180, 1) 100%);
-            filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#000000CC", endColorstr="#5420B400", GradientType=0);
+            filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#000000", endColorstr="#5420B4", GradientType=0);
         }
         section:nth-of-type(2) > div:not(.cards-container):not(#bg-cta){
             background: #8C44E4;
@@ -83,54 +83,46 @@ $tPath = app()->environment('local') ? '' : '';
         <div class="absolute inset-0">
             <img src="{{ asset($tPath.'assets/img/party-1.png') }}" alt="" class="w-full h-full object-cover"></img>
             <div class="absolute inset-0 bg-gradient-to-b from-pink-500/80 to-indigo-600/90"></div>
+            {{-- <div class="absolute inset-0" style="background-image: #ED4690; background-image: linear-gradient(135deg, rgba(237, 70, 144, 1) 0%, rgba(85, 34, 204, 1) 100%);"></div> --}}
         </div>
-        <div class="relative z-10 flex flex-col justify-around items-center h-full text-white">
-            <div class="w-full">
-                <div id="default-carousel" class="relative w-full" data-carousel="slide">
-                    <!-- Carousel wrapper -->
-                    <div class="relative h-56 overflow-hidden rounded-lg md:h-96 xl:h-175">
-                        <div class="hidden duration-700 ease-in-out" data-carousel-item>
-                            <img src="{{ asset($tPath.'assets/img/party-1.png') }}" class="absolute block w-3/4 xl:w-[87%] -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" alt="...">
+        <div class="relative z-10 flex flex-col justify-center gap-24 items-center h-full text-white">
+            <div class="w-[87%] h-1/2 bg-black">
+                <div id="carouselComponent" class="w-full h-full relative left-1/2 -translate-x-1/2 rounded-xl">
+                    {{-- <div class="card-loading items-loading absolute top-0 left-0 w-full h-full 3xsphone:rounded-md sm:rounded-lg md:rounded-xl" style="animation: 2.5s shine ease-in infinite; animation-delay: 0.25s;"></div>      --}}
+                    <div class="absolute z-0 inset-0">
+                        {{-- <img src="{{ asset($tPath.'assets/img/Rectangle-3859.png') }}" class="absolute block w-3/4 xl:w-[87%] h-full object-cover -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" alt="..."> --}}
+                        <img src="{{ asset($tPath.'assets/img/party-1.png') }}" class="absolute block w-3/4 xl:w-[87%] h-full object-cover -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" alt="...">
+                        {{-- <img src="{{ asset($tPath.'assets/img/party-1.png') }}" class="block object-contain 3xsphone:rounded-md sm:rounded-lg md:rounded-xl" alt="..."> --}}
+                        {{-- <div class="absolute inset-0 bg-gradient-to-b from-pink-500/80 to-indigo-600/90"></div> --}}
+                        <div class="absolute inset-0 bg-gradient-to-br from-black to-purple-700"></div>
+
+                        {{-- <div class="absolute inset-0" style="background: #000000; background: linear-gradient(45deg, rgba(0, 0, 0, 1) 13%, rgba(84, 32, 180, 1) 100%);"></div> --}}
+                    </div>
+                    <div class="w-[95%] h-3/5 relative z-10 left-1/2 -translate-x-1/2 top-[10%] flex justify-around">
+                        <div class="w-2/5 h-4/5 self-center flex justify-between items-center">
+                            {!! str_replace('<svg', '<svg class="size-8" onclick="prevCarousel"', file_get_contents(public_path('assets/icons/hero_home/vector-left.svg'))) !!}
+                            <div class="flex-1 h-full relative">
+                                <h3 class="text-3xl">Mavisuru Ragasoba</h3>
+                                <span>University morawa</span>
+                                {{-- <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, dolorem nobis suscipit cumque culpa voluptas illum dignissimos ullam necessitatibus rem repellat aspernatur molestias ad?</p> --}}
+                                <a href="/" class="w-35 h-10 rounded-lg absolute bottom-[10%] flex justify-center items-center font-bold mt-5 text-lg text-white border-2 border-white">Learn More</a>
+                            </div>
+                            {!! str_replace('<svg', '<svg class="size-8" onclick="nextCarousel()"', file_get_contents(public_path('assets/icons/hero_home/vector-right.svg'))) !!}
                         </div>
-                        <div class="hidden duration-700 ease-in-out" data-carousel-item>
-                            <img src="{{ asset($tPath.'assets/img/party-1.png') }}" class="absolute block w-3/4 xl:w-[87%] -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" alt="...">
-                        </div>
-                        <div class="hidden duration-700 ease-in-out" data-carousel-item>
-                            <img src="{{ asset($tPath.'assets/img/party-1.png') }}" class="absolute block w-3/4 xl:w-[87%] -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" alt="...">
-                        </div>
-                        <div class="hidden duration-700 ease-in-out" data-carousel-item>
-                            <img src="{{ asset($tPath.'assets/img/party-1.png') }}" class="absolute block w-3/4 xl:w-[87%] -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" alt="...">
-                        </div>
-                        <div class="hidden duration-700 ease-in-out" data-carousel-item>
-                            <img src="{{ asset($tPath.'assets/img/party-1.png') }}" class="absolute block w-3/4 xl:w-[87%] -translate-x-1/2 -translate-y-1/2 top-1/2 left-1/2" alt="...">
+                        <div class="w-2/5 h-4/5 self-center relative">
+                            <h3 class="text-3xl">UNI EVENTS</h3>
+                            <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Distinctio optio laborum cupiditate laudantium reprehenderit eligendi blanditiis, in excepturi accusantium aspernatur voluptates ut, nesciunt incidunt amet animi illum repellat neque atque?</p>
+                            <a href="/about" class="w-35 h-10 rounded-lg absolute bottom-[10%] flex justify-center items-center font-bold mt-5 bg-red-500 text-lg text-white">About US</a>
                         </div>
                     </div>
-                    <!-- Slider indicators -->
-                    <div class="absolute z-30 flex -translate-x-1/2 bottom-5 left-1/2 space-x-3 rtl:space-x-reverse">
-                        <button type="button" class="w-3 h-3 rounded-full" aria-current="true" aria-label="Slide 1" data-carousel-slide-to="0"></button>
-                        <button type="button" class="w-3 h-3 rounded-full" aria-current="false" aria-label="Slide 2" data-carousel-slide-to="1"></button>
-                        <button type="button" class="w-3 h-3 rounded-full" aria-current="false" aria-label="Slide 3" data-carousel-slide-to="2"></button>
-                        <button type="button" class="w-3 h-3 rounded-full" aria-current="false" aria-label="Slide 4" data-carousel-slide-to="3"></button>
-                        <button type="button" class="w-3 h-3 rounded-full" aria-current="false" aria-label="Slide 5" data-carousel-slide-to="4"></button>
-                    </div>
-                    <!-- Slider controls -->
-                    <button type="button" class="absolute top-0 start-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-prev>
-                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 dark:bg-gray-800/30 group-hover:bg-white/50 dark:group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
-                            <svg class="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 1 1 5l4 4"/>
-                            </svg>
-                            <span class="sr-only">Previous</span>
-                        </span>
-                    </button>
-                    <button type="button" class="absolute top-0 end-0 z-30 flex items-center justify-center h-full px-4 cursor-pointer group focus:outline-none" data-carousel-next>
-                        <span class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-white/30 dark:bg-gray-800/30 group-hover:bg-white/50 dark:group-hover:bg-gray-800/60 group-focus:ring-4 group-focus:ring-white dark:group-focus:ring-gray-800/70 group-focus:outline-none">
-                            <svg class="w-4 h-4 text-white dark:text-gray-800 rtl:rotate-180" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
-                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
-                            </svg>
-                            <span class="sr-only">Next</span>
-                        </span>
-                    </button>
+                    <ul class="absolute left-1/2 -translate-x-1/2 bottom-5 -translate-y-1/2 flex gap-3">
+                        <li class="w-3 h-3 rounded-full bg-white cursor-pointer" onclick="change(1)"></li>
+                        <li class="w-3 h-3 rounded-full bg-white cursor-pointer" onclick="change(2)"></li>
+                        <li class="w-3 h-3 rounded-full bg-white cursor-pointer" onclick="change(3)"></li>
+                        <li class="w-3 h-3 rounded-full bg-white cursor-pointer" onclick="change(4)"></li>
+                    </ul>
                 </div>
+                <div class="w-10/12"></div>
             </div>
             <ul class="w-3/4 xl:w-[87%] flex justify-around text-white">
                 <li class="flex flex-col items-center gap-1">
