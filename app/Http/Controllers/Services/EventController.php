@@ -136,4 +136,10 @@ class EventController extends Controller
         //     return [];
         }
     }
+    public function searchFunction(Request $request){
+        $request->input('search');
+        $request->input('month');
+        $request->input('university');
+        $request->input('event');
+    }
 }

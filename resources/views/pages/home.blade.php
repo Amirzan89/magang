@@ -104,7 +104,7 @@ $tPath = app()->environment('local') ? '' : '';
                             <div class="flex-1 h-full relative">
                                 <h3 class="text-3xl">Mavisuru Ragasoba</h3>
                                 <span>University morawa</span>
-                                {{-- <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, dolorem nobis suscipit cumque culpa voluptas illum dignissimos ullam necessitatibus rem repellat aspernatur molestias ad?</p> --}}
+                                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Cum, dolorem nobis suscipit cumque culpa voluptas illum dignissimos ullam necessitatibus rem repellat aspernatur molestias ad?</p>
                                 <a href="/" class="w-35 h-10 rounded-lg absolute bottom-[10%] flex justify-center items-center font-bold mt-5 text-lg text-white border-2 border-white">Learn More</a>
                             </div>
                             {!! str_replace('<svg', '<svg class="size-8" onclick="nextCarousel()"', file_get_contents(public_path('assets/icons/hero_home/vector-right.svg'))) !!}
@@ -121,8 +121,41 @@ $tPath = app()->environment('local') ? '' : '';
                         <li class="w-3 h-3 rounded-full bg-white cursor-pointer" onclick="change(3)"></li>
                         <li class="w-3 h-3 rounded-full bg-white cursor-pointer" onclick="change(4)"></li>
                     </ul>
+                    <div class="w-11/12 absolute left-1/2 -translate-x-1/2 -bottom-7 flex justify-around bg-white rounded-2xl">
+                        <div>
+                            <h4>Date Event:</h4>
+                            <p>Select Event Month</p>
+                            <div class="relative max-w-sm">
+                                <div class="absolute inset-y-0 start-0 flex items-center ps-3 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M20 4a2 2 0 0 0-2-2h-2V1a1 1 0 0 0-2 0v1h-3V1a1 1 0 0 0-2 0v1H6V1a1 1 0 0 0-2 0v1H2a2 2 0 0 0-2 2v2h20V4ZM0 18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8H0v10Zm5-8h10a1 1 0 0 1 0 2H5a1 1 0 0 1 0-2Z"/>
+                                    </svg>
+                                </div>
+                                <input id="datepicker-autohide" datepicker datepicker-autohide type="text" class="bg-gray-50 border border-gray-300 text-black text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full ps-10 p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="date event:">
+                            </div>
+                        </div>
+                        <form class="max-w-sm mx-auto">
+                            <label for="countries" class="block mb-2 text-sm font-medium text-black">Select an University</label>
+                            <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                <option selected>Choose a University</option>
+                                <option value="US">United States</option>
+                                <option value="CA">Canada</option>
+                                <option value="FR">France</option>
+                                <option value="DE">Germany</option>
+                            </select>
+                        </form>
+                        <form class="max-w-sm mx-auto">
+                            <label for="countries" class="block mb-2 text-sm font-medium text-black">Select an Event</label>
+                            <select id="countries" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                <option selected>Choose a Event</option>
+                                <option value="US">United States</option>
+                                <option value="CA">Canada</option>
+                                <option value="FR">France</option>
+                                <option value="DE">Germany</option>
+                            </select>
+                        </form>
+                    </div>
                 </div>
-                <div class="w-10/12"></div>
             </div>
             <ul class="w-3/4 xl:w-[87%] flex justify-around text-white">
                 <li class="flex flex-col items-center gap-1">

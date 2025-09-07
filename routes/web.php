@@ -13,6 +13,8 @@ use App\Http\Controllers\Security\RSAController;
 
 use App\Http\Controllers\Pages\HomeController;
 
+use App\Http\Controllers\Services\EmailController;
+
 // use App\Http\Controllers\Security\AESController;
 
 Route::get('/view-aes', function(){
@@ -57,8 +59,7 @@ Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
 Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
-
-
+Route::post('/footer-mail', [EmailController::class, 'sendEmailFooter']);
 
 Route::get('/', function(){
     return view('pages.home');
