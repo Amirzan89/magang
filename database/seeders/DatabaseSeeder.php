@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
             unlink(self::$tempFile);
         }
         file_put_contents(self::$tempFile,json_encode([], JSON_PRETTY_PRINT));
-        $this->call(AdminSeeder::class);
+        // $this->call(AdminSeeder::class);
         $this->call(UserSeeder::class);
         // $this->call(MetodePembayaranSeeder::class);
         unlink(self::$tempFile);

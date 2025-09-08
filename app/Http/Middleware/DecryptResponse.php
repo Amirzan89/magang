@@ -8,8 +8,10 @@ use App\Models\User;
 use Closure;
 class DecryptResponse
 {
+    // private static $testURL = [];
+    private static $testURL = ['/verify/create/email', '/verify/create/password'];
     public function handle(Request $request, Closure $next){
-        if($request->isMethod('GET') || $request->getPathInfo() == '/handshake-rsa'){
+        if($request->isMethod('GET') || $request->getPathInfo() == '/handshake-rsa' || in_array($request->getPathInfo(), self::$testURL)){
             return $next($request);
         }
         $resMerseal = app()->make(AESController::class)->mersealToken($request);

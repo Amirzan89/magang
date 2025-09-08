@@ -13,7 +13,7 @@ use App\Http\Controllers\Security\RSAController;
 
 use App\Http\Controllers\Pages\HomeController;
 
-use App\Http\Controllers\Services\EmailController;
+use App\Http\Controllers\Services\MailController;
 
 // use App\Http\Controllers\Security\AESController;
 
@@ -59,8 +59,42 @@ Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
 Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
-Route::post('/footer-mail', [EmailController::class, 'sendEmailFooter']);
+Route::post('/footer-mail', [MailController::class, 'sendMailFooter']);
 
+Route::group(['prefix'=>'/verify'], function(){
+    Route::group(['prefix'=>'/create'], function(){ 
+        Route::post('/password', [MailController::class, 'createForgotPassword'])->withoutMiddleware(['auth', 'authorized']);
+        Route::post('/email',[MailController::class, 'createVerifyEmail'])->withoutMiddleware(['auth', 'authorized']);
+    });
+    Route::group(['prefix'=>'/password'], function(){
+        // Route::get('/{any?}', [UserController::class, 'getChangePass']'Mobile\PengelolaController@getChangePass')->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
+        // Route::post('/',[UserController::class, 'changePassEmail'])->withoutMiddleware(['auth', 'authorized']);
+    });
+    Route::group(['prefix'=>'/email'], function(){
+        Route::get('/{any?}', [UserController::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
+        Route::post('/',[UserController::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
+    });
+    Route::group(['prefix'=>'/otp'], function(){
+        Route::post('/password', [UserController::class, 'getChangePass'])->withoutMiddleware(['auth', 'authorized']);
+        Route::post('/email', [UserController::class, 'verifyEmail'])->withoutMiddleware(['auth', 'authorized']);
+    });
+});
+Route::group(['prefix'=>'/users'], function(){
+    Route::post('/login', [LoginController::class, 'login'])->withoutMiddleware(['auth', 'authorized']);
+    Route::post('/login-google', [LoginController::class, 'loginGoogle'])->withoutMiddleware(['auth', 'authorized']);
+    Route::post('/check-email', [RegisterController::class, 'checkEmailAvailability'])->withoutMiddleware(['auth', 'authorized']);
+    Route::post('/register', [RegisterController::class, 'register'])->withoutMiddleware(['auth', 'authorized']);
+    Route::group(['prefix'=>'/profile'], function(){
+        Route::post('/', [UserController::class, 'getProfile']);
+        Route::group(['prefix'=>'/profile'], function(){
+            Route::post('/', [UserController::class, 'updateProfile']);
+            Route::post('/uploadFoto', [UserController::class, 'uploadFoto'])->withoutMiddleware(['auth', 'authorized']);
+            Route::put('/password', [UserController::class, 'updatePassword']);
+        });
+        Route::post('/foto', [UserController::class, 'checkFotoProfile']);
+    });
+    Route::post('/logout', [UserController::class, 'logout']);
+});
 Route::get('/', function(){
     return view('pages.home');
 });
