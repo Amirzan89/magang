@@ -1,38 +1,30 @@
 <?php
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-class User extends Model
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Tymon\JWTAuth\Contracts\JWTSubject;
+class User extends Authenticatable implements JWTSubject
 {
-    use HasFactory;
+    use HasApiTokens, HasFactory, Notifiable;
     protected $table = "users";
     protected $primaryKey = "id_user";
     public $incrementing = true;
-    protected $keyType = 'integer';
     public $timestamps = true;
-    protected $fillable = [
-        'uuid',
-        'nama_lengkap',
-        'email',
-        'password',
-        // 'jenis_kelamin',
-        // 'no_telpon',
-        // 'alamat',
-        // 'no_rekening',
-        // 'email_verified_at',
-        // 'created_at',
-        // 'updated_at',
+    protected $fillable = [ 
+        'nama_lengkap', 'no_telpon', 'jenis_kelamin', 'tanggal_lahir', 'tempat_lahir', 'email', 'password', 'role', 'foto', 'verifikasi'
     ];
-    public function fromVerifikasi()
-    {
-        return $this->hasMany(VerifikasiUser::class, 'id_verifikasi_user');
+    protected $hidden = [
+        // 'password',
+    ];
+    public function getJWTIdentifier(){
+        return $this->getKey();
     }
-    public function fromPesanan()
-    {
-        return $this->hasMany(Pesanan::class, 'id_pesanan');
+    public function getJWTCustomClaims(){
+        return [];
     }
-    public function toAuth()
-    {
-        return $this->belongsTo(Auth::class, 'id_auth');
-    }
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
 }

@@ -55,10 +55,9 @@ Route::group(['prefix'=>'/pyxis'], function(){
 Route::get('/tailwind', function(){
     return view('testing.tailwind');
 });
-Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
-Route::post('/handshake-rsa', [RSAController::class, 'handshake_rsa']);
+Route::post('/handshake', [RSAController::class, 'handshake_rsa']);
 Route::post('/footer-mail', [MailController::class, 'sendMailFooter']);
 
 Route::group(['prefix'=>'/verify'], function(){

@@ -68,7 +68,9 @@ class RSAController extends Controller
         $expBuf = pack('J', $exp); // 8 byte big-endian (PHP 8.0+)
         $spkiB64 = $request->input('clientPublicSpkiB64');
         $clientNonceB64 = $request->input('clientNonce');
-        abort_unless($spkiB64 && $clientNonceB64, 400, 'bad req');
+        if($spkiB64 && $clientNonceB64){
+            return response()->json(['status' => 'error', 'message' => 'bad req'], 400);
+        }
         $pub = PublicKeyLoader::load(base64_decode($spkiB64))->withPadding(RSA::ENCRYPTION_OAEP)->withHash('sha256')->withMGFHash('sha256');
         // $keyIdHex = bin2hex($keyId);
         // Cache::put("sess:$keyIdHex", ['aes'=>hex2bin($aesKey), 'hmac'=>$hmac, 'exp'=>$exp], now()->addMinutes(30));
@@ -95,7 +97,9 @@ class RSAController extends Controller
     public function query_rsa(Request $request){
         try{
             $merseal = $request->header('X-Merseal') ?? $request->input('merseal');
-            abort_unless($merseal, 401, 'missing merseal token');
+            if(!$merseal){
+                return response()->json(['status' => 'error', 'message' => 'missing merseal token'], 401);
+            }
             $sePayload = json_decode(Crypt::decryptString($merseal), true);
             if(($sePayload['exp'] ?? 0) < time()){
                 abort(401, 'merseal expired');
@@ -104,7 +108,9 @@ class RSAController extends Controller
             $ivHex = $request->input('uniqueid');
             $ctHex = $request->input('chiper');
             $macHex= $request->input('mac');
-            abort_unless($ivHex && $ctHex && $macHex, 400, 'bad payload');
+            if(!$ivHex && !$ctHex && !$macHex){
+                return response()->json(['status' => 'error', 'message' => 'bad payload'], 400);
+            }
             $iv = hex2bin($ivHex);
             $ct = hex2bin($ctHex);
             $mac= hex2bin($macHex);

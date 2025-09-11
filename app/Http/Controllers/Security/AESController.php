@@ -22,7 +22,9 @@ class AESController extends Controller
         $ivHex = $request->input('uniqueid');
         $ctHex = $request->input('cipher');
         $macHex= $request->input('mac');
-        abort_unless($ivHex && $ctHex && $macHex, 400, 'bad payload');
+        if(!$ivHex && !$ctHex && !$macHex){
+            return ['status' => 'error', 'message' => 'bad payload', 'statusCode' => 400];
+        }
         $iv = hex2bin($ivHex);
         $ct = hex2bin($ctHex);
         $mac= hex2bin($macHex);
