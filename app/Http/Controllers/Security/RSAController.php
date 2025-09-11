@@ -68,7 +68,7 @@ class RSAController extends Controller
         $expBuf = pack('J', $exp); // 8 byte big-endian (PHP 8.0+)
         $spkiB64 = $request->input('clientPublicSpkiB64');
         $clientNonceB64 = $request->input('clientNonce');
-        if($spkiB64 && $clientNonceB64){
+        if(!$spkiB64 && !$clientNonceB64){
             return response()->json(['status' => 'error', 'message' => 'bad req'], 400);
         }
         $pub = PublicKeyLoader::load(base64_decode($spkiB64))->withPadding(RSA::ENCRYPTION_OAEP)->withHash('sha256')->withMGFHash('sha256');
