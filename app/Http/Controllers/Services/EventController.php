@@ -33,7 +33,7 @@ class EventController extends Controller
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
-    public function dataCacheFile($con, $idEvent = null, $limit = null, $colAlias = null, $reqData){
+    public function dataCacheFile($con, $idEvent = null, $limit = null, $col = null, $alias = null, $reqData, $shuffle = false){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
@@ -44,6 +44,7 @@ class EventController extends Controller
             //if file is delete will make new json file
             $eventData = $this->fetchEvents($reqData);
             foreach($eventData as &$item){
+                $item['is_free'] = (bool) mt_rand(0, 1);
                 unset($item['id_event']);
             }
             if(!file_put_contents(self::$jsonFile,json_encode($eventData, JSON_PRETTY_PRINT))){
@@ -84,13 +85,17 @@ class EventController extends Controller
                 $jsonData = $result;
             }
             if(is_array($jsonData)){
+                $shuffle ? shuffle($jsonData) : null;
                 if($limit !== null && is_int($limit) && $limit > 0){
                     $jsonData = array_slice($jsonData, 0, $limit);
                 }
-                if(!is_null($colAlias) && is_array($colAlias['col'])){
+                if(is_array($col) && is_array($alias) && count($col) === count($alias)) {
                     foreach($jsonData as &$entry){
-                        $entry = array_intersect_key($entry, array_flip($colAlias['col']));
-                        $entry = is_array($colAlias['alias']) && (count($colAlias['col']) === count($colAlias['alias'])) ? array_combine($colAlias['alias'], array_values($entry)) : $entry;
+                        $temp = [];
+                        foreach($col as $i => $key){
+                            $temp[$alias[$i]] = $entry[$key] ?? null;
+                        }
+                        $entry = $temp;
                     }
                 }
                 return ['status'=>'success','data'=>$jsonData];

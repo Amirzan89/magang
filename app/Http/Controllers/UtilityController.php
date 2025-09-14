@@ -40,7 +40,7 @@ class UtilityController extends Controller
             return view($name);
         }else if($env == 'inertia'){
             return inertia($name);
-        }else if($env == 'nuxt'){
+        }else if($env == 'vue'){
             return $comps(env('APP_DOMAIN', 'same') == 'same');
         }
     }
