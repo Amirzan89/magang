@@ -9,13 +9,13 @@ use Carbon\Carbon;
 class HomeController extends Controller
 {
     public function showHome(Request $request){
-        $upcoming_events = app()->make(ServiceEventController::class)->dataCacheFile('get_limit', null, 6, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], $request->except(['key', 'iv']), true);
+        $upcoming_events = app()->make(ServiceEventController::class)->dataCacheFile(null, null, 6, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], null, true);
         if($upcoming_events['status'] == 'error'){
             $codeRes = $upcoming_events['statusCode'];
             unset($upcoming_events['statusCode']);
             return response()->json($upcoming_events, $codeRes);
         }
-        $past_events = app()->make(ServiceEventController::class)->dataCacheFile('get_limit', null, 4, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], $request->except(['key', 'iv']), true);
+        $past_events = app()->make(ServiceEventController::class)->dataCacheFile(null, null, 4, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], null, true);
         if($past_events['status'] == 'error'){
             $codeRes = $past_events['statusCode'];
             unset($past_events['statusCode']);

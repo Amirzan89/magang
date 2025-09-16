@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Services\EventController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
@@ -98,3 +99,4 @@ Route::get('/', function(){
     return view('pages.home');
 });
 Route::post('/', [HomeController::class, 'showHome']);
+Route::post('/search', [EventController::class, 'searchEvent']);

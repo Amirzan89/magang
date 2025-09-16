@@ -3,25 +3,24 @@ namespace App\Http\Controllers\Services;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Security\AESController;
 use Illuminate\Http\Request;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Crypt;
-use phpseclib3\Crypt\PublicKeyLoader;
-use phpseclib3\Crypt\RSA;
-use Laravel\Passport\Token;
-use Carbon\Carbon;
-use Error;
+use Illuminate\Support\Facades\Validator;
 class EventController extends Controller
 {
     private static $jsonFile;
     public function __construct(){
         self::$jsonFile = storage_path('app/database/events.json');
     }
-    private function fetchEvents($reqDec){
+    private function fetchEvents(){
         $keyPyxis = env('PYXIS_KEY1');
         $ivPyxis = env('PYXIS_IV');
+        $reqDec = [
+            "userid" => "demo@demo.com",
+            "groupid" => "XCYTUA",
+            "businessid" => "PJLBBS",
+            "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, eventname, eventdescription, startdate, enddate, quota, price, inclusion, imageicon_1, imageicon_2, imageicon_3, imageicon_4, imageicon_5, imageicon_6, imageicon_7, imageicon_8, imageicon_9 FROM event_schedule",
+            "order" => ""
+        ];
         $bodyData = strtoupper(bin2hex(openssl_encrypt(json_encode($reqDec), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis)));
         $bodyReq = [
             'apikey' => env('PYXIS_KEY2'),
@@ -33,118 +32,190 @@ class EventController extends Controller
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
-    public function dataCacheFile($con, $idEvent = null, $limit = null, $col = null, $alias = null, $reqData, $shuffle = false){
+    public function dataCacheFile($con = null, $idEvent = null, $limit = null, $col = null, $alias = null, $searchFilter = null, $shuffle = false){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
         }
-        $fileExist = file_exists(self::$jsonFile);
-        //check if file exist
-        if(!$fileExist){
-            //if file is delete will make new json file
-            $eventData = $this->fetchEvents($reqData);
+        if(!file_exists(self::$jsonFile)){
+            $eventData = $this->fetchEvents();
             foreach($eventData as &$item){
-                $item['is_free'] = (bool) mt_rand(0, 1);
                 unset($item['id_event']);
             }
-            if(!file_put_contents(self::$jsonFile,json_encode($eventData, JSON_PRETTY_PRINT))){
-                return ['status'=>'error','message'=>'Gagal menyimpan file sistem'];
+            if(!file_put_contents(self::$jsonFile, json_encode($eventData, JSON_PRETTY_PRINT))){
+                return ['status' => 'error', 'message' => 'Gagal menyimpan file sistem'];
             }
         }
-        if($con == 'get_id'){
-            $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
-            $result = null;
-            foreach($jsonData as $key => $item){
-                if(isset($item['id_event']) && $item['id_event'] == $idEvent){
-                    $result = $jsonData[$key];
-                }
-            }
-            return ['status'=>'success','data'=>$result];
-        }else if($con == 'get_total'){
-            $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
-            $result = 0;
-            $result = count($jsonData);
-            return ['status'=>'success','data'=>$result];
-        }else if($con == 'get_limit'){
-            $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
-            if(!empty($data) && !is_null($data)){
-                $result = null;
-                if(count($data) > 1){
-                    return ['status'=>'error', 'message'=>'error array key more than 1'];
-                }
-                foreach($jsonData as $key => $item){
-                    $keys = array_keys($data)[0];
-                    if(isset($item[$keys]) && $item[$keys] == $data[$keys]){
-                        $result[] = $jsonData[$key];
+        $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
+        $result = $jsonData;
+        foreach($result as &$item){
+            $item['is_free'] = ($item['price'] == 0 || $item['price'] === "0.0000");
+        }
+        switch($con){
+            case 'get_id':
+                foreach($jsonData as $item){
+                    if(isset($item['id_event']) && $item['id_event'] == $idEvent){
+                        $result = $item;
+                        break;
                     }
                 }
-                if($result === null){
-                    return ['status'=>'success','data'=>$result];
-                }
-                $jsonData = [];
-                $jsonData = $result;
-            }
-            if(is_array($jsonData)){
-                $shuffle ? shuffle($jsonData) : null;
-                if($limit !== null && is_int($limit) && $limit > 0){
-                    $jsonData = array_slice($jsonData, 0, $limit);
-                }
-                if(is_array($col) && is_array($alias) && count($col) === count($alias)) {
-                    foreach($jsonData as &$entry){
-                        $temp = [];
-                        foreach($col as $i => $key){
-                            $temp[$alias[$i]] = $entry[$key] ?? null;
+                return ['status' => 'success', 'data' => $result];
+            case 'get_total':
+                return ['status' => 'success', 'data' => count($jsonData)];
+        }
+        //case sensitive
+        $searchF = function() use ($result, $searchFilter){
+            if(empty($searchFilter['search'])) return $result;
+            $keywords = preg_split('/\s+/', $searchFilter['search']);
+            return array_filter($result, function ($item) use ($keywords){
+                $searchableFields = ['eventname'];
+                foreach($keywords as $keyword){
+                    foreach($searchableFields as $field){
+                        if (isset($item[$field]) && strpos($item[$field], $keyword) !== false){
+                            return true;
                         }
-                        $entry = $temp;
                     }
                 }
-                return ['status'=>'success','data'=>$jsonData];
-            }
-            return null;
-        // }else if($con == 'get_riwayat'){
-        //     $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
-        //     usort($jsonData, function($a, $b){
-        //         return strtotime($b['created_at']) - strtotime($a['created_at']);
+                return false;
+            });
+        };
+
+        //case insensitive
+        // $searchF = function(array $result, array $searchFilter){
+        //     if(empty($searchFilter['search'])) return $result;
+        //     $keywords = preg_split('/\s+/', strtolower($searchFilter['search']));
+        //     return array_filter($result, function ($item) use ($keywords){
+        //         $searchableFields = ['eventname'];
+        //         foreach($keywords as $keyword){
+        //             foreach($searchableFields as $field){
+        //                 if(!empty($item[$field]) && stripos(strtolower($item[$field]), $keyword) !== false){
+        //                     return true;
+        //                 }
+        //             }
+        //         }
+        //         return false;
         //     });
-        //     if(!empty($data) && !is_null($data)){
-        //         $result = null;
-        //         if(count($data) > 1){
-        //             return 'error array key more than 1';
-        //         }
-        //         foreach($jsonData as $key => $item){
-        //             $keys = array_keys($data)[0];
-        //             if(isset($item[$keys]) && $item[$keys] == $data[$keys]){
-        //                 $result[] = $jsonData[$key];
-        //             }
-        //         }
-        //         if($result === null){
-        //             return ['status'=>'success','data'=>$result];
-        //         }
-        //         $jsonData = [];
-        //         $jsonData = $result;
-        //     }
-        //     if(is_array($jsonData)){
-        //         if($limit !== null && is_int($limit) && $limit > 0){
-        //             $jsonData = array_slice($jsonData, 0, $limit);
-        //         }
-        //         if(is_array($col)){
-        //             foreach($jsonData as &$entry){
-        //                 $entry = array_intersect_key($entry, array_flip($col));
-        //                 $entry = is_array($alias) &&(count($col) === count($alias)) ? array_combine($alias, array_values($entry)) : $entry;
-        //             }
-        //         }
-        //         foreach($jsonData as &$item){
-        //             $item['desc'] = 'ks';
-        //         }
-        //         return $jsonData;
-        //     }
-        //     return [];
+        // };
+        $filtersF = function(array $result, array $searchFilter){
+            if(!array_filter($searchFilter['filters'] ?? [], fn($v) => $v !== null && $v !== '')){
+                return $result;
+            }
+            return array_filter($result, function ($item) use ($searchFilter){
+                foreach($searchFilter['filters'] as $key => $value){
+                    if($value === null || $value === '' || !isset($item[$key])){
+                        continue;
+                    }
+                    switch($key){
+                        case 'is_free':
+                            if(!(($value === 'free' && $item['is_free']) || ($value === 'pay' && !$item['is_free']))){
+                                return false;
+                            }
+                            break;
+
+                        case 'startdate':
+                            if(!(strtotime($item['startdate']) > strtotime($value))){
+                                return false;
+                            }
+                            break;
+
+                        case 'enddate':
+                            if(!(strtotime($item['enddate']) < strtotime($value))){
+                                return false;
+                            }
+                            break;
+
+                        default:
+                            if($item[$key] != $value){
+                                return false;
+                            }
+                    }
+                }
+                return true;
+            });
+        };
+
+        if($searchFilter){
+            if($searchFilter['flow'] == 'search-filter'){
+                $result = $searchF($result, $searchFilter);
+                $result = $filtersF($result, $searchFilter);
+            }else if($searchFilter['flow'] == 'filter-search'){
+                $result = $filtersF($result, $searchFilter);
+                $result = $searchF($result, $searchFilter);
+            }
         }
+
+        // shuffle
+        if($shuffle){
+            shuffle($result);
+        }
+
+        // limit
+        if($limit !== null && is_int($limit) && $limit > 0){
+            $result = array_slice($result, 0, $limit);
+        }
+
+        // change column mapping
+        if(is_array($col) && is_array($alias) && count($col) === count($alias)){
+            $mapped = [];
+            foreach($result as $entry){
+                $temp = [];
+                foreach($col as $i => $key){
+                    $temp[$alias[$i]] = $entry[$key] ?? null;
+                }
+                $mapped[] = $temp;
+            }
+            $result = $mapped;
+        }
+
+        return ['status' => 'success', 'data' => $result];
     }
-    public function searchFunction(Request $request){
-        $request->input('search');
-        $request->input('month');
-        $request->input('university');
-        $request->input('event');
+
+    public function searchEvent(Request $request){
+        $validator = Validator::make($request->query(), [
+            'find' => 'nullable|string|max:100',
+            'f_pop' => 'nullable|string|in:all,trending,booked',
+            'f_univ' => 'nullable|string|in:all,none',
+            'f_category' => 'nullable|string|in:all,none',
+            'f_startdate' => 'nullable|date',
+            'f_enddate' => 'nullable|date',
+            'f_pay' => 'nullable|string|in:free,pay',
+        ], [
+            'find.string' => 'Pencarian harus string',
+            'find.max' => 'Pencarian maksimal 100 karakter',
+            'f_pop.in' => 'Filter Populer Invalid',
+            'f_pop.string' => 'Filter Populer harus string',
+            'f_univ.in' => 'Filter Universitas Invalid',
+            'f_univ.string' => 'Filter Universitas harus string',
+            'f_category.in' => 'Filter Kategori Invalid',
+            'f_startdate.date' => 'Filter Rentang Tanggal Harus tanggal',
+            'f_enddate.date' => 'Filter Rentang Tanggal Harus tanggal',
+            'f_pay.string' => 'Filter Harga Harus string',
+            'f_pay.in' => 'Filter Harga Invalid',
+        ]);
+        if ($validator->fails()){
+            $errors = [];
+            foreach($validator->errors()->toArray() as $field => $errorMessages){
+                $errors[$field] = $errorMessages[0];
+                break;
+            }
+            return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 422);
+        }
+        $filters = [
+            // 'popular' => $request->query('f_pop'),
+            // 'university' => $request->query('f_univ'),
+            // 'eventgroup' => $request->query('f_category'),
+            'startdate' => $request->query('f_startdate') ?: null,
+            'enddate' => $request->query('f_enddate') ?: null,
+            // 'price' => $request->query('f_price'),
+            'is_free' => $request->query('f_pay'),
+        ];
+        $searchKeyword = $request->query('find');
+        $flow = $request->query('flow', 'search-filter');
+        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], ['flow' => $flow, 'search' => $searchKeyword, 'filters' => $filters], false);
+        if($data['status'] === 'error'){
+            return response()->json($data, 500);
+        }
+        $enc = app()->make(AESController::class)->encryptResponse($data['data'], $request->input('key'), $request->input('iv'));
+        return response()->json(['status' => 'success', 'data' => $enc]);
     }
 }
