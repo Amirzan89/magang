@@ -63,15 +63,19 @@ class EventController extends Controller
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
         }
-        //case sensitive
-        $searchF = function() use ($result, $searchFilter){
-            if(empty($searchFilter['search'])) return $result;
-            $keywords = preg_split('/\s+/', $searchFilter['search']);
-            return array_filter($result, function ($item) use ($keywords){
+
+        $searchF = function(array $result, array $searchFilter){
+            if (empty($searchFilter['search'])) return $result;
+            $caseSensitive = $searchFilter['case_sensitive'] ?? false;
+            $query = $searchFilter['search'];
+            $keywords = preg_split('/\s+/', $caseSensitive ? $query : strtolower($query));
+            return array_filter($result, function ($item) use ($keywords, $caseSensitive){
                 $searchableFields = ['eventname'];
                 foreach($keywords as $keyword){
                     foreach($searchableFields as $field){
-                        if (isset($item[$field]) && strpos($item[$field], $keyword) !== false){
+                        if(!isset($item[$field])) continue;
+                        $haystack = $caseSensitive ? $item[$field] : strtolower($item[$field]);
+                        if(($caseSensitive ? strpos($haystack, $keyword) : strpos($haystack, $keyword)) !== false){
                             return true;
                         }
                     }
@@ -80,22 +84,6 @@ class EventController extends Controller
             });
         };
 
-        //case insensitive
-        // $searchF = function(array $result, array $searchFilter){
-        //     if(empty($searchFilter['search'])) return $result;
-        //     $keywords = preg_split('/\s+/', strtolower($searchFilter['search']));
-        //     return array_filter($result, function ($item) use ($keywords){
-        //         $searchableFields = ['eventname'];
-        //         foreach($keywords as $keyword){
-        //             foreach($searchableFields as $field){
-        //                 if(!empty($item[$field]) && stripos(strtolower($item[$field]), $keyword) !== false){
-        //                     return true;
-        //                 }
-        //             }
-        //         }
-        //         return false;
-        //     });
-        // };
         $filtersF = function(array $result, array $searchFilter){
             if(!array_filter($searchFilter['filters'] ?? [], fn($v) => $v !== null && $v !== '')){
                 return $result;
