@@ -100,3 +100,4 @@ Route::get('/', function(){
 });
 Route::post('/', [HomeController::class, 'showHome']);
 Route::post('/search', [EventController::class, 'searchEvent']);
+Route::post('/handshake-domain', [RSAController::class, 'handshakeDomain']);

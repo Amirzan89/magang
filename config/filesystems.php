@@ -35,24 +35,9 @@ return [
             'root' => storage_path('app/database'),
             'throw' => false,
         ],
-        'admin' => [
+        'private' => [
             'driver' => 'local',
-            'root' => storage_path('app/admin'),
-            'throw' => false,
-        ],
-        'pengelola' => [
-            'driver' => 'local',
-            'root' => storage_path('app/pengelola'),
-            'throw' => false,
-        ],
-        'user' => [
-            'driver' => 'local',
-            'root' => storage_path('app/user'),
-            'throw' => false,
-        ],
-        'green_house' => [
-            'driver' => 'local',
-            'root' => storage_path('app/green_house'),
+            'root' => storage_path('app/private'),
             'throw' => false,
         ],
 

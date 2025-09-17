@@ -1,7 +1,10 @@
 <?php
-
 use Laravel\Sanctum\Sanctum;
-
+$jsonConfig = storage_path('app/database/inject_domain.json');
+$injectDomain = '';
+if(file_exists($jsonConfig)){
+    $injectDomain = json_decode(file_get_contents($jsonConfig))['ID_SANCTUM_STATEFUL_DOMAINS'];
+}
 return [
 
     /*
@@ -20,6 +23,15 @@ return [
         'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
         Sanctum::currentApplicationUrlWithPort()
     ))),
+
+    // 'stateful' => array_filter(array_merge(
+    //     explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
+    //         '%s%s',
+    //         'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
+    //         Sanctum::currentApplicationUrlWithPort()
+    //     ))),
+    //     // env('APP_INJECT_DOMAIN', false) && $injectDomain ? explode(',', $injectDomain) : []
+    // )),
 
     /*
     |--------------------------------------------------------------------------

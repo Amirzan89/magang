@@ -11,8 +11,7 @@ class DecryptResponse
     // private static $testURL = [];
     private static $testURL = ['/verify/create/email', '/verify/create/password'];
     public function handle(Request $request, Closure $next){
-        return $next($request);
-        if($request->isMethod('GET') || $request->getPathInfo() == '/handshake' || in_array($request->getPathInfo(), self::$testURL)){
+        if($request->isMethod('GET') || in_array($request->getPathInfo(), ['/handshake', '/handshake-domain']) || in_array($request->getPathInfo(), self::$testURL)){
             return $next($request);
         }
         $resMerseal = app()->make(AESController::class)->mersealToken($request);

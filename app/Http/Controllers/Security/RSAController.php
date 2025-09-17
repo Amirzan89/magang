@@ -5,12 +5,14 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Crypt;
 use phpseclib3\Crypt\PublicKeyLoader;
 use phpseclib3\Crypt\RSA;
-use Laravel\Passport\Token;
-use Carbon\Carbon;
+use Artisan;
+use Throwable;
+use Exception;
 use Error;
 class RSAController extends Controller
 {
@@ -136,8 +138,43 @@ class RSAController extends Controller
                 'message' => $e->getMessage(),
                 'status' => 'error'
             ], $e->response->status());
-        } catch(\Throwable $e){
+        }catch(Throwable $e){
             abort(401, 'bad merseal');
+        }catch(Error $e){
+            return response()->json([
+                'error' => 'An unexpected server error occurred.',
+                'message' => $e->getMessage(),
+                'status' => 'error'
+            ], 500);
+        }
+    }
+    public function handshakeDomain(Request $request){
+        try{
+            $privateKeyPem = Storage::disk('private')->get('private_key.pem');
+            $privateKey = PublicKeyLoader::load($privateKeyPem);
+            $result = $privateKey->withPadding(RSA::ENCRYPTION_OAEP)->decrypt(hex2bin($request->input('cipher')));
+            if($result !== 'success handshake-domain'){
+                return response()->json(['status' => 'error', 'message' => 'Invalid code handshake'], 400);
+            }
+            Storage::disk('database')->put('inject_domain.json', json_encode([
+                'ID_FRONTEND_URL' => $request->header('Origin'),
+                'ID_SANCTUM_STATEFUL_DOMAINS' => $request->header('Origin'),
+                'ID_SESSION_DOMAIN' => parse_url($request->header('Origin'), PHP_URL_HOST),
+            ], JSON_PRETTY_PRINT));
+            Artisan::call('config:clear');
+            return response()->json(['status' => 'success', 'message' => 'Sukses Handshake Domain']);
+        }catch(Throwable $e){
+            return response()->json([
+                'error' => 'An unexpected server throww error occurred.',
+                'message' => $e->getMessage(),
+                'status' => 'error'
+            ], 500);
+        }catch(Exception $e){
+            return response()->json([
+                'error' => 'An unexpected server error occurred.',
+                'message' => $e->getMessage(),
+                'status' => 'error'
+            ], 500);
         }catch(Error $e){
             return response()->json([
                 'error' => 'An unexpected server error occurred.',
