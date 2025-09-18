@@ -1,11 +1,6 @@
 <?php
 
 use Illuminate\Support\Str;
-$jsonConfig = storage_path('app/database/inject_domain.json');
-$injectDomain = '';
-if(file_exists($jsonConfig)){
-    $injectDomain = json_decode(file_get_contents($jsonConfig))['ID_SESSION_DOMAIN'];
-}
 return [
 
     /*
@@ -159,8 +154,7 @@ return [
     |
     */
 
-    'domain' => env('SESSION_DOMAIN'),
-    // 'domain' => env('APP_INJECT_DOMAIN', false) && $injectDomain ? $injectDomain : env('SESSION_DOMAIN'),
+    'domain' => env('APP_INJECT_DOMAIN', false) ? env('ID_SESSION_DOMAIN') : env('SESSION_DOMAIN'),
 
     /*
     |--------------------------------------------------------------------------
