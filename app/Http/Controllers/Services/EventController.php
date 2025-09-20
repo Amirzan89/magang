@@ -28,7 +28,7 @@ class EventController extends Controller
             'timestamp' => now()->format('YmdHis'),
             'message' => $bodyData,
         ];
-        $res =  Http::withHeaders(['Content-Type' => 'application/json'])->post('http://sereg.alcorsys.com:8989/JQuery', $bodyReq)->body();
+        $res =  Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL'). '/JQuery', $bodyReq)->body();
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
@@ -186,7 +186,7 @@ class EventController extends Controller
                 $errors[$field] = $errorMessages[0];
                 break;
             }
-            return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 422);
+            // return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 422);
         }
         $filters = [
             // 'popular' => $request->query('f_pop'),
@@ -204,6 +204,27 @@ class EventController extends Controller
             return response()->json($data, 500);
         }
         $enc = app()->make(AESController::class)->encryptResponse($data['data'], $request->input('key'), $request->input('iv'));
+        return response()->json(['status' => 'success', 'data' => $enc]);
+    }
+    public function registrationEvents(Request $request){
+        $keyPyxis = env('PYXIS_KEY1');
+        $ivPyxis = env('PYXIS_IV');
+        $reqDec = [
+            "userid" => "demo@demo.com",
+            "groupid" => "XCYTUA",
+            "businessid" => "PJLBBS",
+            "sql" => "INSERT INTO event_registration (keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount, paymentdate, notes)VALUES ('I5RLGI', '5EA9I2', 'SMNR', 'EVT001', 'O', 'REG92139123 ', '2025-08-15', 'Jamal Sikamto', 'jamSIM86@myemail.com', '8136232323', 'M', '1', 'C', '122335465656', '50000', '2025-08-15 ', 'OK')",
+        ];
+        $bodyData = strtoupper(bin2hex(openssl_encrypt(json_encode($reqDec), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis)));
+        $bodyReq = [
+            'apikey' => env('PYXIS_KEY2'),
+            'uniqueid' => $ivPyxis,
+            'timestamp' => now()->format('YmdHis'),
+            'message' => $bodyData,
+        ];
+        $res =  json_decode(Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL') . '/JNonQuery', $bodyReq)->body());
+        $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
+        $enc = app()->make(AESController::class)->encryptResponse($decServer['data'], $request->input('key'), $request->input('iv'));
         return response()->json(['status' => 'success', 'data' => $enc]);
     }
 }
