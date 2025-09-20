@@ -65,7 +65,7 @@ class EventController extends Controller
         }
 
         $searchF = function(array $result, array $searchFilter){
-            if (empty($searchFilter['search'])) return $result;
+            if(empty($searchFilter['search'])) return $result;
             $caseSensitive = $searchFilter['case_sensitive'] ?? false;
             $query = $searchFilter['search'];
             $keywords = preg_split('/\s+/', $caseSensitive ? $query : strtolower($query));
@@ -90,12 +90,17 @@ class EventController extends Controller
             }
             return array_filter($result, function ($item) use ($searchFilter){
                 foreach($searchFilter['filters'] as $key => $value){
-                    if($value === null || $value === '' || !isset($item[$key])){
+                    if($value === null || $value === ''){
                         continue;
                     }
                     switch($key){
-                        case 'is_free':
-                            if(!(($value === 'free' && $item['is_free']) || ($value === 'pay' && !$item['is_free']))){
+                        case 'category':
+                            if(!array_key_exists('category', $item) || empty($item['category'])){
+                                return false;
+                            }
+                            $filterCategories = (array) $value;
+                            $itemCategories = (array) $item['category'];
+                            if(count(array_intersect($filterCategories, $itemCategories)) === 0){
                                 return false;
                             }
                             break;
@@ -108,6 +113,12 @@ class EventController extends Controller
 
                         case 'enddate':
                             if(!(strtotime($item['enddate']) < strtotime($value))){
+                                return false;
+                            }
+                            break;
+
+                        case 'is_free':
+                            if(!(($value === 'free' && $item['is_free']) || ($value === 'pay' && !$item['is_free']))){
                                 return false;
                             }
                             break;
@@ -148,8 +159,13 @@ class EventController extends Controller
             foreach($result as $entry){
                 $temp = [];
                 foreach($col as $i => $key){
-                    $temp[$alias[$i]] = $entry[$key] ?? null;
+                    if(array_key_exists($key, $entry)){
+                        $temp[$alias[$i]] = $entry[$key];
+                    }
                 }
+                // if(!array_key_exists('category', $temp)){
+                //     $temp['category'] = [];
+                // }
                 $mapped[] = $temp;
             }
             $result = $mapped;
@@ -163,7 +179,7 @@ class EventController extends Controller
             'find' => 'nullable|string|max:100',
             'f_pop' => 'nullable|string|in:all,trending,booked',
             'f_univ' => 'nullable|string|in:all,none',
-            'f_category' => 'nullable|string|in:all,none',
+            'f_category.*' => 'nullable|string|in:all,none,tech,business,design,games,seni',
             'f_startdate' => 'nullable|date',
             'f_enddate' => 'nullable|date',
             'f_pay' => 'nullable|string|in:free,pay',
@@ -174,7 +190,7 @@ class EventController extends Controller
             'f_pop.string' => 'Filter Populer harus string',
             'f_univ.in' => 'Filter Universitas Invalid',
             'f_univ.string' => 'Filter Universitas harus string',
-            'f_category.in' => 'Filter Kategori Invalid',
+            'f_category.*.in' => 'Filter Kategori Invalid',
             'f_startdate.date' => 'Filter Rentang Tanggal Harus tanggal',
             'f_enddate.date' => 'Filter Rentang Tanggal Harus tanggal',
             'f_pay.string' => 'Filter Harga Harus string',
@@ -186,9 +202,10 @@ class EventController extends Controller
                 $errors[$field] = $errorMessages[0];
                 break;
             }
-            // return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 422);
+            return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 422);
         }
         $filters = [
+            'category' => $request->query('f_category', []),
             // 'popular' => $request->query('f_pop'),
             // 'university' => $request->query('f_univ'),
             // 'eventgroup' => $request->query('f_category'),
@@ -199,7 +216,7 @@ class EventController extends Controller
         ];
         $searchKeyword = $request->query('find');
         $flow = $request->query('flow', 'search-filter');
-        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], ['flow' => $flow, 'search' => $searchKeyword, 'filters' => $filters], false);
+        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'is_free', 'img', 'category'], ['flow' => $flow, 'search' => $searchKeyword, 'filters' => $filters], false);
         if($data['status'] === 'error'){
             return response()->json($data, 500);
         }
