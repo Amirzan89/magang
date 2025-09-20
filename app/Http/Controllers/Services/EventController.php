@@ -90,7 +90,7 @@ class EventController extends Controller
             }
             return array_filter($result, function ($item) use ($searchFilter){
                 foreach($searchFilter['filters'] as $key => $value){
-                    if($value === null || $value === ''){
+                    if($value === null || $value === '' || $value === []){
                         continue;
                     }
                     switch($key){
