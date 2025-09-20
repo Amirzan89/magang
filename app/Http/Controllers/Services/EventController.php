@@ -89,6 +89,24 @@ class EventController extends Controller
                 return $result;
             }
             return array_filter($result, function ($item) use ($searchFilter){
+                if(!empty($searchFilter['filters']['startdate']) && !empty($searchFilter['filters']['enddate'])){
+                    $eventStart  = strtotime($item['startdate']);
+                    $eventEnd    = strtotime($item['enddate']);
+                    $filterStart = strtotime($searchFilter['filters']['startdate']);
+                    $filterEnd   = strtotime($searchFilter['filters']['enddate']);
+                    return $eventStart <= $filterEnd && $eventEnd >= $filterStart;
+                }else{
+                    if(!empty($searchFilter['filters']['startdate'])){
+                        if(strtotime($item['startdate']) >= strtotime($searchFilter['filters']['startdate'])){
+                            return true;
+                        }
+                    }
+                    if(!empty($searchFilter['filters']['enddate'])){
+                        if(strtotime($item['enddate']) <= strtotime($searchFilter['filters']['enddate'])){
+                            return true;
+                        }
+                    }
+                }
                 foreach($searchFilter['filters'] as $key => $value){
                     if($value === null || $value === '' || $value === []){
                         continue;
@@ -101,18 +119,6 @@ class EventController extends Controller
                             $filterCategories = (array) $value;
                             $itemCategories = (array) $item['category'];
                             if(count(array_intersect($filterCategories, $itemCategories)) === 0){
-                                return false;
-                            }
-                            break;
-
-                        case 'startdate':
-                            if(!(strtotime($item['startdate']) > strtotime($value))){
-                                return false;
-                            }
-                            break;
-
-                        case 'enddate':
-                            if(!(strtotime($item['enddate']) < strtotime($value))){
                                 return false;
                             }
                             break;
@@ -134,6 +140,13 @@ class EventController extends Controller
         };
 
         if($searchFilter){
+            if(array_key_exists('startdate', $searchFilter['filters']) && array_key_exists('enddate', $searchFilter['filters']) && !empty($searchFilter['filters']['startdate']) && !empty($searchFilter['filters']['enddate'])){
+                $start = strtotime($searchFilter['filters']['startdate']);
+                $end = strtotime($searchFilter['filters']['enddate']);
+                if($start > $end){
+                    return ['status' => 'error', 'message' => 'Invalid: range date filter'];
+                }
+            }
             if($searchFilter['flow'] == 'search-filter'){
                 $result = $searchF($result, $searchFilter);
                 $result = $filtersF($result, $searchFilter);
@@ -216,7 +229,7 @@ class EventController extends Controller
         ];
         $searchKeyword = $request->query('find');
         $flow = $request->query('flow', 'search-filter');
-        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'is_free', 'img', 'category'], ['flow' => $flow, 'search' => $searchKeyword, 'filters' => $filters], false);
+        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'enddate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'end_date', 'is_free', 'img', 'category'], ['flow' => $flow, 'search' => $searchKeyword, 'filters' => $filters], false);
         if($data['status'] === 'error'){
             return response()->json($data, 500);
         }
