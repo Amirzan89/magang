@@ -148,39 +148,4 @@ class RSAController extends Controller
             ], 500);
         }
     }
-    public function handshakeDomain(Request $request){
-        try{
-            $privateKeyPem = Storage::disk('private')->get('private_key.pem');
-            $privateKey = PublicKeyLoader::load($privateKeyPem);
-            $result = $privateKey->withPadding(RSA::ENCRYPTION_OAEP)->decrypt(hex2bin($request->input('cipher')));
-            if($result !== 'success handshake-domain'){
-                return response()->json(['status' => 'error', 'message' => 'Invalid code handshake'], 400);
-            }
-            Storage::disk('database')->put('inject_domain.json', json_encode([
-                'ID_FRONTEND_URL' => $request->header('Origin'),
-                'ID_SANCTUM_STATEFUL_DOMAINS' => $request->header('Origin'),
-                'ID_SESSION_DOMAIN' => parse_url($request->header('Origin'), PHP_URL_HOST),
-            ], JSON_PRETTY_PRINT));
-            Artisan::call('config:clear');
-            return response()->json(['status' => 'success', 'message' => 'Sukses Handshake Domain']);
-        }catch(Throwable $e){
-            return response()->json([
-                'error' => 'An unexpected server throww error occurred.',
-                'message' => $e->getMessage(),
-                'status' => 'error'
-            ], 500);
-        }catch(Exception $e){
-            return response()->json([
-                'error' => 'An unexpected server error occurred.',
-                'message' => $e->getMessage(),
-                'status' => 'error'
-            ], 500);
-        }catch(Error $e){
-            return response()->json([
-                'error' => 'An unexpected server error occurred.',
-                'message' => $e->getMessage(),
-                'status' => 'error'
-            ], 500);
-        }
-    }
 }
