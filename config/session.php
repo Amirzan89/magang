@@ -154,7 +154,7 @@ return [
     |
     */
 
-    'domain' => env('APP_INJECT_DOMAIN', false) ? env('ID_SESSION_DOMAIN') : env('SESSION_DOMAIN'),
+    'domain' => env('SESSION_DOMAIN'),
 
     /*
     |--------------------------------------------------------------------------
