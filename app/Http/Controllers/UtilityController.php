@@ -45,7 +45,6 @@ class UtilityController extends Controller
         }
     }
     public static function changeMonth($inpDate){
-        $inpDate = json_decode($inpDate, true);
         $monthTranslations = [
             '01' => 'Januari',
             '02' => 'Februari',
@@ -60,28 +59,28 @@ class UtilityController extends Controller
             '11' => 'November',
             '12' => 'Desember',
         ];
-        // Check if it's an associative array (single data)
-        if (array_keys($inpDate) !== range(0, count($inpDate) - 1)) {
-            foreach (['tanggal', 'tanggal_awal', 'tanggal_akhir'] as $dateField) {
-                if (isset($inpDate[$dateField]) && $inpDate[$dateField] !== null) {
-                    $date = new DateTime($inpDate[$dateField]);
-                    $monthNumber = $date->format('m');
-                    $indonesianMonth = $monthTranslations[$monthNumber];
-                    $formattedDate = $date->format('d') . ' ' . $indonesianMonth . ' ' . $date->format('Y');
-                    $inpDate[$dateField] = $formattedDate;
+        $formatDate = function ($dateStr) use ($monthTranslations){
+            if(empty($dateStr) || strtotime($dateStr) === false){
+                return $dateStr;
+            }
+            $date = new DateTime($dateStr);
+            $monthNumber = $date->format('m');
+            $indonesianMonth = $monthTranslations[$monthNumber];
+            return $date->format('d') . ' ' . $indonesianMonth . ' ' . $date->format('Y');
+        };
+        if(array_keys($inpDate) !== range(0, count($inpDate) - 1)){
+            foreach($inpDate as $key => $value){
+                if($value !== null){
+                    $inpDate[$key] = $formatDate($value);
                 }
             }
-        } else {
+        }else{
             $processedData = [];
-            foreach ($inpDate as $inpDateRow) {
-                $processedRow = $inpDateRow;
-                foreach (['tanggal', 'tanggal_awal', 'tanggal_akhir'] as $dateField) {
-                    if (isset($processedRow[$dateField]) && $processedRow[$dateField] !== null) {
-                        $date = new DateTime($processedRow[$dateField]);
-                        $monthNumber = $date->format('m');
-                        $indonesianMonth = $monthTranslations[$monthNumber];
-                        $formattedDate = $date->format('d') . ' ' . $indonesianMonth . ' ' . $date->format('Y');
-                        $processedRow[$dateField] = $formattedDate;
+            foreach($inpDate as $row){
+                $processedRow = $row;
+                foreach($processedRow as $key => $value){
+                    if($value !== null){
+                        $processedRow[$key] = $formatDate($value);
                     }
                 }
                 $processedData[] = $processedRow;

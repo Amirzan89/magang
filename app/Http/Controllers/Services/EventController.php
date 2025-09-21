@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Services;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\Security\AESController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -32,7 +33,7 @@ class EventController extends Controller
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
-    public function dataCacheFile($con = null, $idEvent = null, $limit = null, $col = null, $alias = null, $searchFilter = null, $shuffle = false){
+    public function dataCacheFile($con = null, $idEvent = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
@@ -175,6 +176,11 @@ class EventController extends Controller
             $result = array_slice($result, 0, $limit);
         }
 
+        //format date
+        if($formatDate){
+            $result = app()->make(UtilityController::class)->changeMonth($result);
+        }
+
         // change column mapping
         if(is_array($col) && is_array($alias) && count($col) === count($alias)){
             $mapped = [];
@@ -192,6 +198,7 @@ class EventController extends Controller
             }
             $result = $mapped;
         }
+
 
         return ['status' => 'success', 'data' => $result];
     }

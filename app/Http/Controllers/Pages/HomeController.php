@@ -9,13 +9,13 @@ use Carbon\Carbon;
 class HomeController extends Controller
 {
     public function showHome(Request $request){
-        $upcoming_events = app()->make(ServiceEventController::class)->dataCacheFile(null, null, 6, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], null, true);
+        $upcoming_events = app()->make(ServiceEventController::class)->dataCacheFile(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($upcoming_events['status'] == 'error'){
             $codeRes = $upcoming_events['statusCode'];
             unset($upcoming_events['statusCode']);
             return response()->json($upcoming_events, $codeRes);
         }
-        $past_events = app()->make(ServiceEventController::class)->dataCacheFile(null, null, 4, ['id', 'eventid', 'eventname', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'is_free', 'img'], null, true);
+        $past_events = app()->make(ServiceEventController::class)->dataCacheFile(null, null, 4, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($past_events['status'] == 'error'){
             $codeRes = $past_events['statusCode'];
             unset($past_events['statusCode']);
