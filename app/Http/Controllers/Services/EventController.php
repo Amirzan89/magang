@@ -37,7 +37,7 @@ class EventController extends Controller
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
         }
-        if(!file_exists(self::$jsonFile)){
+        $updateFileCache = function(){
             $eventData = $this->fetchEvents();
             foreach($eventData as &$item){
                 unset($item['id_event']);
@@ -45,8 +45,17 @@ class EventController extends Controller
             if(!file_put_contents(self::$jsonFile, json_encode($eventData, JSON_PRETTY_PRINT))){
                 return ['status' => 'error', 'message' => 'Gagal menyimpan file sistem'];
             }
+            return $eventData;
+        };
+        $jsonData = [];
+        if(!file_exists(self::$jsonFile)){
+            $jsonData = $updateFileCache();
+        }else{
+            $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
         }
-        $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
+        if(empty($jsonData) || is_null($jsonData)){
+            $jsonData = $updateFileCache();
+        }
         $result = $jsonData;
         foreach($result as &$item){
             $item['is_free'] = ($item['price'] == 0 || $item['price'] === "0.0000");
