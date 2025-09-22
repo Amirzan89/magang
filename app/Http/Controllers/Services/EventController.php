@@ -59,7 +59,7 @@ class EventController extends Controller
         }
         $result = $jsonData;
         foreach($result as &$item){
-            $item['is_free'] = ($item['price'] == 0 || $item['price'] === "0.0000");
+            $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
         }
         switch($con){
             case 'get_id':

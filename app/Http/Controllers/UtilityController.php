@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\File;
+use Carbon\Carbon;
 use DateTime;
 class UtilityController extends Controller
 {
@@ -44,6 +45,12 @@ class UtilityController extends Controller
             return $comps(env('APP_DOMAIN', 'same') == 'same');
         }
     }
+    public static function randomDateInRange($startDate, $endDate, $format = 'Y-m-d'){
+        $start = Carbon::parse($startDate);
+        $end   = Carbon::parse($endDate);
+        $randomTimestamp = rand($start->timestamp, $end->timestamp);
+        return Carbon::createFromTimestamp($randomTimestamp)->format($format);
+    }
     public static function changeMonth($inpDate){
         $monthTranslations = [
             '01' => 'Januari',
@@ -68,6 +75,9 @@ class UtilityController extends Controller
             $indonesianMonth = $monthTranslations[$monthNumber];
             return $date->format('d') . ' ' . $indonesianMonth . ' ' . $date->format('Y');
         };
+        if(is_string($inpDate)){
+            return $formatDate($inpDate);
+        }
         if(array_keys($inpDate) !== range(0, count($inpDate) - 1)){
             foreach($inpDate as $key => $value){
                 if($value !== null){
