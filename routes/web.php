@@ -99,5 +99,6 @@ Route::get('/', function(){
     return view('pages.home');
 });
 Route::post('/', [HomeController::class, 'showHome']);
+Route::post('/events', [HomeController::class, 'showEvents']);
 Route::post('/search', [EventController::class, 'searchEvent']);
 Route::post('/registration-event', [EventController::class, 'registrationEvents']);

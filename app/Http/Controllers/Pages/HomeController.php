@@ -68,15 +68,16 @@ class HomeController extends Controller
         $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
         return UtilityController::getView('', $enc, 'json');
     }
-    public function showArtikel(Request $request, $rekomendasi = null){
-        $artikel = array_map(function($item){
-            $item['created_at'] = Carbon::parse($item['created_at'])->translatedFormat('l, d F Y');
-            return $item;
-        }, app()->make(ServiceArtikelController::class)->dataCacheFile(null, 'get_limit', null, 3) ?? []);
-        // $artikel = array_merge(...array_fill(0, 5, $artikel)); // make copy
-        shuffle($artikel);
-        return UtilityController::getView('dashboard', [], ['redirect' => '/dashboard']);
-        // return view('page.Artikel.daftar',['artikel'=> $artikel]);
+    public function showEvents(Request $request){
+        $eventController = app()->make(ServiceEventController::class);
+        $allEvent = $eventController->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        if($allEvent['status'] == 'error'){
+            $codeRes = $allEvent['statusCode'];
+            unset($allEvent['statusCode']);
+            return response()->json($allEvent, $codeRes);
+        }
+        $enc = app()->make(AESController::class)->encryptResponse($allEvent['data'], $request->input('key'), $request->input('iv'));
+        return UtilityController::getView('', $enc, 'json');
     }
     public function showDetailArtikel(Request $request, $path){
         $path = str_replace('-', ' ', $path);
