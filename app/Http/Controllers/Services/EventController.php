@@ -33,7 +33,7 @@ class EventController extends Controller
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
-    public function dataCacheFile($con = null, $idEvent = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
+    public function dataCacheFile($con = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
@@ -62,25 +62,17 @@ class EventController extends Controller
             $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
         }
         switch($con){
-            case 'get_id':
-                foreach($jsonData as $item){
-                    if(isset($item['id_event']) && $item['id_event'] == $idEvent){
-                        $result = $item;
-                        break;
-                    }
-                }
-                return ['status' => 'success', 'data' => $result];
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
         }
 
         $searchF = function(array $result, array $searchFilter){
-            if(empty($searchFilter['search'])) return $result;
-            $caseSensitive = $searchFilter['case_sensitive'] ?? false;
-            $query = $searchFilter['search'];
+            if(empty($searchFilter['search']) || is_null($searchFilter['search'])) return $result;
+            $query = $searchFilter['search']['keywoard'];
+            $searchableFields = array_key_exists('fields', $searchFilter['search']) ? $searchFilter['search']['fields'] : ['eventname'];
+            $caseSensitive = $searchFilter['search']['case_sensitive'] ?? false;
             $keywords = preg_split('/\s+/', $caseSensitive ? $query : strtolower($query));
-            return array_filter($result, function ($item) use ($keywords, $caseSensitive){
-                $searchableFields = ['eventname'];
+            return array_filter($result, function ($item) use ($keywords, $searchableFields, $caseSensitive){
                 foreach($keywords as $keyword){
                     foreach($searchableFields as $field){
                         if(!isset($item[$field])) continue;
@@ -150,14 +142,18 @@ class EventController extends Controller
         };
 
         if($searchFilter){
-            if(array_key_exists('startdate', $searchFilter['filters']) && array_key_exists('enddate', $searchFilter['filters']) && !empty($searchFilter['filters']['startdate']) && !empty($searchFilter['filters']['enddate'])){
+            if(array_key_exists('filters', $searchFilter) && array_key_exists('startdate', $searchFilter['filters']) && array_key_exists('enddate', $searchFilter['filters']) && !empty($searchFilter['filters']['startdate']) && !empty($searchFilter['filters']['enddate'])){
                 $start = strtotime($searchFilter['filters']['startdate']);
                 $end = strtotime($searchFilter['filters']['enddate']);
                 if($start > $end){
                     return ['status' => 'error', 'message' => 'Invalid: range date filter'];
                 }
             }
-            if($searchFilter['flow'] == 'search-filter'){
+            if($searchFilter['flow'] == 'search'){
+                $result = $searchF($result, $searchFilter);
+            }else if($searchFilter['flow'] == 'filter'){
+                $result = $filtersF($result, $searchFilter);
+            }else if($searchFilter['flow'] == 'search-filter'){
                 $result = $searchF($result, $searchFilter);
                 $result = $filtersF($result, $searchFilter);
             }else if($searchFilter['flow'] == 'filter-search'){
@@ -174,6 +170,9 @@ class EventController extends Controller
         // limit
         if($limit !== null && is_int($limit) && $limit > 0){
             $result = array_slice($result, 0, $limit);
+            if($limit === 1){
+                $result = empty($result) ? [] : $result[0];
+            }
         }
 
         //format date
@@ -183,22 +182,22 @@ class EventController extends Controller
 
         // change column mapping
         if(is_array($col) && is_array($alias) && count($col) === count($alias)){
-            $mapped = [];
-            foreach($result as $entry){
+            $mapItem = function($entry) use ($col, $alias) {
+                $entryArr = (array) $entry;
                 $temp = [];
                 foreach($col as $i => $key){
-                    if(array_key_exists($key, $entry)){
-                        $temp[$alias[$i]] = $entry[$key];
+                    if(array_key_exists($key, $entryArr)){
+                        $temp[$alias[$i]] = $entryArr[$key];
                     }
                 }
-                // if(!array_key_exists('category', $temp)){
-                //     $temp['category'] = [];
-                // }
-                $mapped[] = $temp;
+                return $temp;
+            };
+            if(is_array($result) && array_keys($result) === range(0, count($result) - 1)){
+                $result = array_map($mapItem, $result);
+            }else{
+                $result = $mapItem($result);
             }
-            $result = $mapped;
         }
-
 
         return ['status' => 'success', 'data' => $result];
     }
@@ -243,9 +242,7 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $searchKeyword = $request->query('find');
-        $flow = $request->query('flow', 'search-filter');
-        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'enddate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'end_date', 'is_free', 'img', 'category'], ['flow' => $flow, 'search' => $searchKeyword, 'filters' => $filters], false);
+        $data = $this->dataCacheFile(null, null, ['id', 'eventid', 'eventname', 'startdate', 'enddate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'end_date', 'is_free', 'img', 'category'], ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
         if($data['status'] === 'error'){
             return response()->json($data, 500);
         }

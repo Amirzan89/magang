@@ -10,14 +10,14 @@ class HomeController extends Controller
 {
     public function showHome(Request $request){
         $eventController = app()->make(ServiceEventController::class);
-        $upcoming_events = $eventController->dataCacheFile(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $upcoming_events = $eventController->dataCacheFile(null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($upcoming_events['status'] == 'error'){
             $codeRes = $upcoming_events['statusCode'];
             unset($upcoming_events['statusCode']);
             return response()->json($upcoming_events, $codeRes);
         }
         $upcoming_events = $upcoming_events['data'];
-        $past_events = $eventController->dataCacheFile(null, null, 4, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $past_events = $eventController->dataCacheFile(null, 4, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($past_events['status'] == 'error'){
             $codeRes = $past_events['statusCode'];
             unset($past_events['statusCode']);
@@ -70,7 +70,7 @@ class HomeController extends Controller
     }
     public function showEvents(Request $request){
         $eventController = app()->make(ServiceEventController::class);
-        $allEvent = $eventController->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $allEvent = $eventController->dataCacheFile(null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($allEvent['status'] == 'error'){
             $codeRes = $allEvent['statusCode'];
             unset($allEvent['statusCode']);
@@ -79,25 +79,29 @@ class HomeController extends Controller
         $enc = app()->make(AESController::class)->encryptResponse($allEvent['data'], $request->input('key'), $request->input('iv'));
         return UtilityController::getView('', $enc, 'json');
     }
-    public function showDetailArtikel(Request $request, $path){
-        $path = str_replace('-', ' ', $path);
-        $artikel = array_map(function($item){
-            $item['created_at'] = Carbon::parse($item['created_at'])->translatedFormat('l, d F Y');
-            return $item;
-        }, app()->make(ServiceArtikelController::class)->dataCacheFile(null, 'get_limit', 3, 3) ?? []);
-        // $artikel = array_merge(...array_fill(0, 5, $artikel)); // make copy
-        shuffle($artikel);
-        $detailArtikel = app()->make(ServiceArtikelController::class)->dataCacheFile(['judul' => $path], 'get_limit', 1, ['judul', 'deskripsi', 'foto', 'link_video','created_at']);
-        if(is_null($detailArtikel)){
-            return response()->json(['status' => 'error', 'message' => 'Artikel tidak ditemukan'], 404);
+    public function showEventDetail(Request $request, $id){
+        $eventController = app()->make(ServiceEventController::class);
+        $eventDetail = $eventController->dataCacheFile(null, 1, ['id', 'eventid', 'eventname', 'startdate', 'enddate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'end_date', 'is_free', 'img', 'category'], true, ['flow' => 'search', 'search' => ['keywoard' => $id, 'fields' => ['eventid'], 'case_sensitive' => true]], false);
+        if($eventDetail['status'] == 'error'){
+            $codeRes = $eventDetail['statusCode'];
+            unset($eventDetail['statusCode']);
+            return response()->json($eventDetail, $codeRes);
         }
-        $detailArtikel = $detailArtikel[0];
-        $detailArtikel['deskripsi'] = '<p>' . str_replace("\n", '</p><p>', $detailArtikel['deskripsi']) . '</p>';
-        $detailArtikel['created_at'] = Carbon::parse($detailArtikel['created_at'])->translatedFormat('l, d F Y');
+        $eventDetail = $eventDetail['data'];
+        $allEvent = $eventController->dataCacheFile(null, 3, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        if($allEvent['status'] == 'error'){
+            $codeRes = $allEvent['statusCode'];
+            unset($allEvent['statusCode']);
+            return response()->json($allEvent, $codeRes);
+        }
+        $allEvent = $allEvent['data'];
         $dataShow = [
-            'artikel' => $artikel,
-            'detailArtikel' => $detailArtikel,
+            'event_detail' => $eventDetail,
+            'allEvent' => $allEvent,
         ];
-        return view('page.Artikel.detail',$dataShow);
+        echo json_encode($dataShow);
+        exit();
+        $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
+        return UtilityController::getView('', $enc, 'json');
     }
 }
