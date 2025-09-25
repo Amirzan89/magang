@@ -78,7 +78,11 @@ class UtilityController extends Controller
         if(is_string($inpDate)){
             return $formatDate($inpDate);
         }
-        if(array_keys($inpDate) !== range(0, count($inpDate) - 1)){
+        function isMulti(array $arr): bool {
+            if($arr === []) return false;
+            return count(array_filter($arr, 'is_array')) === count($arr);
+        }
+        if(!isMulti($inpDate)){
             foreach($inpDate as $key => $value){
                 if($value !== null){
                     $inpDate[$key] = $formatDate($value);

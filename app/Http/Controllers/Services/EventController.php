@@ -126,6 +126,9 @@ class EventController extends Controller
                             break;
 
                         case 'is_free':
+                            if($value === 'all'){
+                                return true;
+                            }
                             if(!(($value === 'free' && $item['is_free']) || ($value === 'pay' && !$item['is_free']))){
                                 return false;
                             }
@@ -207,10 +210,10 @@ class EventController extends Controller
             'find' => 'nullable|string|max:100',
             'f_pop' => 'nullable|string|in:all,trending,booked',
             'f_univ' => 'nullable|string|in:all,none',
-            'f_category.*' => 'nullable|string|in:all,none,tech,business,design,games,seni',
+            'f_category.*' => 'nullable|string|in:all,none,tech,business,design,games,seni,olahraga',
             'f_startdate' => 'nullable|date',
             'f_enddate' => 'nullable|date',
-            'f_pay' => 'nullable|string|in:free,pay',
+            'f_pay' => 'nullable|string|in:free,pay,all',
         ], [
             'find.string' => 'Pencarian harus string',
             'find.max' => 'Pencarian maksimal 100 karakter',
@@ -242,7 +245,7 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $data = $this->dataCacheFile(null, null, ['id', 'eventid', 'eventname', 'startdate', 'enddate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'end_date', 'is_free', 'img', 'category'], ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
+        $data = $this->dataCacheFile(null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
         if($data['status'] === 'error'){
             return response()->json($data, 500);
         }

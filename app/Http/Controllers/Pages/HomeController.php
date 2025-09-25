@@ -97,10 +97,8 @@ class HomeController extends Controller
         $allEvent = $allEvent['data'];
         $dataShow = [
             'event_detail' => $eventDetail,
-            'allEvent' => $allEvent,
+            'all_events' => $allEvent,
         ];
-        echo json_encode($dataShow);
-        exit();
         $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
         return UtilityController::getView('', $enc, 'json');
     }
