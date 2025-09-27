@@ -81,7 +81,7 @@ class HomeController extends Controller
     }
     public function showEventDetail(Request $request, $id){
         $eventController = app()->make(ServiceEventController::class);
-        $eventDetail = $eventController->dataCacheFile(null, 1, ['id', 'eventid', 'eventname', 'startdate', 'enddate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'end_date', 'is_free', 'img', 'category'], true, ['flow' => 'search', 'search' => ['keywoard' => $id, 'fields' => ['eventid'], 'case_sensitive' => true]], false);
+        $eventDetail = $eventController->dataCacheFile(null, 1, ['id', 'eventid', 'eventname', 'startdate', 'enddate', 'is_free', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'end_date', 'is_free', 'img', 'img', 'img', 'img', 'img', 'category'], true, ['flow' => 'search', 'search' => ['keywoard' => $id, 'fields' => ['eventid'], 'case_sensitive' => true]], false);
         if($eventDetail['status'] == 'error'){
             $codeRes = $eventDetail['statusCode'];
             unset($eventDetail['statusCode']);

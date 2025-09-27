@@ -190,7 +190,14 @@ class EventController extends Controller
                 $temp = [];
                 foreach($col as $i => $key){
                     if(array_key_exists($key, $entryArr)){
-                        $temp[$alias[$i]] = $entryArr[$key];
+                        if(array_key_exists($alias[$i], $temp)){
+                            if(!is_array($temp[$alias[$i]])){
+                                $temp[$alias[$i]] = [$temp[$alias[$i]]];
+                            }
+                            $temp[$alias[$i]][] = $entryArr[$key];
+                        }else{
+                            $temp[$alias[$i]] = $entryArr[$key];
+                        }
                     }
                 }
                 return $temp;

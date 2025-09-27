@@ -27,7 +27,7 @@ class UtilityController extends Controller
             }
             if(is_array($cond) && array_key_exists('json_cookie', $cond)){
                 setCookie('__INITIAL_COSTUM_STATE__', base64_encode($cond['json_cookie']), 0, '/', null, false, false);
-                return response()->json(['status' => 'success', 'data' => $data]);
+                return response()->json(['status' => 'success', 'data' => $data]);  
             }else if(is_string($cond) && $cond == 'only_cookie'){
                 setCookie('__INITIAL_COSTUM_STATE__', base64_encode(json_encode($data)), 0, '/', null, false, false);
                 return response()->json(['status' => 'success']);
@@ -78,11 +78,11 @@ class UtilityController extends Controller
         if(is_string($inpDate)){
             return $formatDate($inpDate);
         }
-        function isMulti(array $arr): bool {
+        $isMulti = function(array $arr): bool {
             if($arr === []) return false;
             return count(array_filter($arr, 'is_array')) === count($arr);
-        }
-        if(!isMulti($inpDate)){
+        };
+        if(!$isMulti($inpDate)){
             foreach($inpDate as $key => $value){
                 if($value !== null){
                     $inpDate[$key] = $formatDate($value);
