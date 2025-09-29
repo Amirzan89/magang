@@ -33,7 +33,7 @@ class EventController extends Controller
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
-    public function dataCacheFile($con = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
+    public function dataCacheFile($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
@@ -66,6 +66,19 @@ class EventController extends Controller
                 return ['status' => 'success', 'data' => count($jsonData)];
         }
 
+        if(!is_null($id) && !empty($id) && $id){
+            $found = false;
+            foreach($result as &$item){
+                if($item['eventid'] === $id){
+                    $found = true;
+                    $result = $item;
+                    break;
+                }
+            }
+            if(!$found){
+                return ['status' => 'error', 'message' => 'Event Not Found', 'statusCode' => 404];
+            }
+        }
         $searchF = function(array $result, array $searchFilter){
             if(empty($searchFilter['search']) || is_null($searchFilter['search'])) return $result;
             $query = $searchFilter['search']['keywoard'];
@@ -252,7 +265,7 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $data = $this->dataCacheFile(null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
+        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
         if($data['status'] === 'error'){
             return response()->json($data, 500);
         }
