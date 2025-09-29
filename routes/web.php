@@ -99,6 +99,7 @@ Route::get('/', function(){
     return view('pages.home');
 });
 Route::post('/', [HomeController::class, 'showHome']);
+Route::post('/about', [HomeController::class, 'showAbout']);
 Route::post('/events', [HomeController::class, 'showEvents']);
 Route::post('/search', [EventController::class, 'searchEvent']);
 Route::post('/events/{id}', [HomeController::class, 'showEventDetail']);
