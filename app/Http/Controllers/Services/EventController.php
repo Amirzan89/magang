@@ -8,20 +8,15 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 class EventController extends Controller
 {
-    private static $jsonFile;
+    private static $jsonFileEvent;
+    private static $jsonFileEventGroup;
     public function __construct(){
-        self::$jsonFile = storage_path('app/database/events.json');
+        self::$jsonFileEvent = storage_path('app/database/events.json');
+        self::$jsonFileEventGroup = storage_path('app/database/event-groups.json');
     }
-    private function fetchEvents(){
+    private function fetchEvents($reqDec = null, $url = null){
         $keyPyxis = env('PYXIS_KEY1');
         $ivPyxis = env('PYXIS_IV');
-        $reqDec = [
-            "userid" => "demo@demo.com",
-            "groupid" => "XCYTUA",
-            "businessid" => "PJLBBS",
-            "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, eventname, eventdescription, startdate, enddate, quota, price, inclusion, imageicon_1, imageicon_2, imageicon_3, imageicon_4, imageicon_5, imageicon_6, imageicon_7, imageicon_8, imageicon_9 FROM event_schedule",
-            "order" => ""
-        ];
         $bodyData = strtoupper(bin2hex(openssl_encrypt(json_encode($reqDec), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis)));
         $bodyReq = [
             'apikey' => env('PYXIS_KEY2'),
@@ -29,49 +24,17 @@ class EventController extends Controller
             'timestamp' => now()->format('YmdHis'),
             'message' => $bodyData,
         ];
-        $res =  Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL'). '/JQuery', $bodyReq)->body();
+        $res =  Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL'). $url, $bodyReq)->body();
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
-    public function dataCacheFile($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
-        $directory = storage_path('app/database');
-        if(!file_exists($directory)){
-            mkdir($directory, 0755, true);
-        }
-        $updateFileCache = function(){
-            $eventData = $this->fetchEvents();
-            foreach($eventData as &$item){
-                unset($item['id_event']);
-            }
-            if(!file_put_contents(self::$jsonFile, json_encode($eventData, JSON_PRETTY_PRINT))){
-                return ['status' => 'error', 'message' => 'Gagal menyimpan file sistem'];
-            }
-            return $eventData;
-        };
-        $jsonData = [];
-        if(!file_exists(self::$jsonFile)){
-            $jsonData = $updateFileCache();
-        }else{
-            $jsonData = json_decode(file_get_contents(self::$jsonFile), true);
-        }
-        if(empty($jsonData) || is_null($jsonData)){
-            $jsonData = $updateFileCache();
-        }
-        $result = $jsonData;
-        foreach($result as &$item){
-            $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
-        }
-        switch($con){
-            case 'get_total':
-                return ['status' => 'success', 'data' => count($jsonData)];
-        }
-
+    private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
         if(!is_null($id) && !empty($id) && $id){
             $found = false;
-            foreach($result as &$item){
+            foreach($inp as &$item){
                 if($item['eventid'] === $id){
                     $found = true;
-                    $result = $item;
+                    $inp = $item;
                     break;
                 }
             }
@@ -79,13 +42,14 @@ class EventController extends Controller
                 return ['status' => 'error', 'message' => 'Event Not Found', 'statusCode' => 404];
             }
         }
-        $searchF = function(array $result, array $searchFilter){
-            if(empty($searchFilter['search']) || is_null($searchFilter['search'])) return $result;
+
+        $searchF = function(array $inp, array $searchFilter){
+            if(empty($searchFilter['search']) || is_null($searchFilter['search'])) return $inp;
             $query = $searchFilter['search']['keywoard'];
             $searchableFields = array_key_exists('fields', $searchFilter['search']) ? $searchFilter['search']['fields'] : ['eventname'];
             $caseSensitive = $searchFilter['search']['case_sensitive'] ?? false;
             $keywords = preg_split('/\s+/', $caseSensitive ? $query : strtolower($query));
-            return array_filter($result, function ($item) use ($keywords, $searchableFields, $caseSensitive){
+            return array_filter($inp, function ($item) use ($keywords, $searchableFields, $caseSensitive){
                 foreach($keywords as $keyword){
                     foreach($searchableFields as $field){
                         if(!isset($item[$field])) continue;
@@ -99,11 +63,11 @@ class EventController extends Controller
             });
         };
 
-        $filtersF = function(array $result, array $searchFilter){
+        $filtersF = function(array $inp, array $searchFilter){
             if(!array_filter($searchFilter['filters'] ?? [], fn($v) => $v !== null && $v !== '')){
-                return $result;
+                return $inp;
             }
-            return array_filter($result, function ($item) use ($searchFilter){
+            return array_filter($inp, function ($item) use ($searchFilter){
                 if(!empty($searchFilter['filters']['startdate']) && !empty($searchFilter['filters']['enddate'])){
                     $eventStart  = strtotime($item['startdate']);
                     $eventEnd    = strtotime($item['enddate']);
@@ -166,34 +130,34 @@ class EventController extends Controller
                 }
             }
             if($searchFilter['flow'] == 'search'){
-                $result = $searchF($result, $searchFilter);
+                $inp = $searchF($inp, $searchFilter);
             }else if($searchFilter['flow'] == 'filter'){
-                $result = $filtersF($result, $searchFilter);
+                $inp = $filtersF($inp, $searchFilter);
             }else if($searchFilter['flow'] == 'search-filter'){
-                $result = $searchF($result, $searchFilter);
-                $result = $filtersF($result, $searchFilter);
+                $inp = $searchF($inp, $searchFilter);
+                $inp = $filtersF($inp, $searchFilter);
             }else if($searchFilter['flow'] == 'filter-search'){
-                $result = $filtersF($result, $searchFilter);
-                $result = $searchF($result, $searchFilter);
+                $inp = $filtersF($inp, $searchFilter);
+                $inp = $searchF($inp, $searchFilter);
             }
         }
 
         // shuffle
         if($shuffle){
-            shuffle($result);
+            shuffle($inp);
         }
 
         // limit
         if($limit !== null && is_int($limit) && $limit > 0){
-            $result = array_slice($result, 0, $limit);
+            $inp = array_slice($inp, 0, $limit);
             if($limit === 1){
-                $result = empty($result) ? [] : $result[0];
+                $inp = empty($inp) ? [] : $inp[0];
             }
         }
 
         //format date
         if($formatDate){
-            $result = app()->make(UtilityController::class)->changeMonth($result);
+            $inp = app()->make(UtilityController::class)->changeMonth($inp);
         }
 
         // change column mapping
@@ -215,14 +179,95 @@ class EventController extends Controller
                 }
                 return $temp;
             };
-            if(is_array($result) && array_keys($result) === range(0, count($result) - 1)){
-                $result = array_map($mapItem, $result);
+            if(is_array($inp) && array_keys($inp) === range(0, count($inp) - 1)){
+                $inp = array_map($mapItem, $inp);
             }else{
-                $result = $mapItem($result);
+                $inp = $mapItem($inp);
             }
         }
+        return ['status' => 'success', 'data' => $inp];
+    }
+    public function dataCacheEventGroup($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
+        $directory = storage_path('app/database');
+        if(!file_exists($directory)){
+            mkdir($directory, 0755, true);
+        }
+        $updateFileCache = function(){
+            $eventData = $this->fetchEvents([
+                "userid" => "demo@demo.com",
+                "groupid" => "XCYTUA",
+                "businessid" => "PJLBBS",
+                "sql" => "SELECT id, eventgroup, eventgroupname, imageicon, active FROM event_group",
+                "order" => ""
+            ],'/JNonQuery');
+            foreach($eventData as &$item){
+                unset($item['id_event']);
+            }
+            if(!file_put_contents(self::$jsonFileEventGroup, json_encode($eventData, JSON_PRETTY_PRINT))){
+                return ['status' => 'error', 'message' => 'Gagal menyimpan file sistem'];
+            }
+            return $eventData;
+        };
+        $jsonData = [];
+        if(!file_exists(self::$jsonFileEventGroup)){
+            $jsonData = $updateFileCache();
+        }else{
+            $jsonData = json_decode(file_get_contents(self::$jsonFileEventGroup), true);
+        }
+        if(empty($jsonData) || is_null($jsonData)){
+            $jsonData = $updateFileCache();
+        }
+        $result = $jsonData;
+        foreach($result as &$item){
+            $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
+        }
+        switch($con){
+            case 'get_total':
+                return ['status' => 'success', 'data' => count($jsonData)];
+        }
 
-        return ['status' => 'success', 'data' => $result];
+        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle);
+    }
+    public function dataCacheEvent($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
+        $directory = storage_path('app/database');
+        if(!file_exists($directory)){
+            mkdir($directory, 0755, true);
+        }
+        $updateFileCache = function(){
+            $eventData = $this->fetchEvents([
+                "userid" => "demo@demo.com",
+                "groupid" => "XCYTUA",
+                "businessid" => "PJLBBS",
+                "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, eventname, eventdescription, startdate, enddate, quota, price, inclusion, imageicon_1, imageicon_2, imageicon_3, imageicon_4, imageicon_5, imageicon_6, imageicon_7, imageicon_8, imageicon_9 FROM event_schedule",
+                "order" => ""
+            ],'/JQuery');
+            foreach($eventData as &$item){
+                unset($item['id_event']);
+            }
+            if(!file_put_contents(self::$jsonFileEvent, json_encode($eventData, JSON_PRETTY_PRINT))){
+                return ['status' => 'error', 'message' => 'Gagal menyimpan file sistem'];
+            }
+            return $eventData;
+        };
+        $jsonData = [];
+        if(!file_exists(self::$jsonFileEvent)){
+            $jsonData = $updateFileCache();
+        }else{
+            $jsonData = json_decode(file_get_contents(self::$jsonFileEvent), true);
+        }
+        if(empty($jsonData) || is_null($jsonData)){
+            $jsonData = $updateFileCache();
+        }
+        $result = $jsonData;
+        foreach($result as &$item){
+            $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
+        }
+        switch($con){
+            case 'get_total':
+                return ['status' => 'success', 'data' => count($jsonData)];
+        }
+
+        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle);
     }
 
     public function searchEvent(Request $request){
@@ -265,7 +310,7 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $data = $this->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
+        $data = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
         if($data['status'] === 'error'){
             return response()->json($data, 500);
         }

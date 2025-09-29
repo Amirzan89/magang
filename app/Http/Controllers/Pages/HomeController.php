@@ -10,14 +10,14 @@ class HomeController extends Controller
 {
     public function showHome(Request $request){
         $eventController = app()->make(ServiceEventController::class);
-        $upcoming_events = $eventController->dataCacheFile(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $upcoming_events = $eventController->dataCacheEvent(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($upcoming_events['status'] == 'error'){
             $codeRes = $upcoming_events['statusCode'];
             unset($upcoming_events['statusCode']);
             return response()->json($upcoming_events, $codeRes);
         }
         $upcoming_events = $upcoming_events['data'];
-        $past_events = $eventController->dataCacheFile(null, null, 4, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $past_events = $eventController->dataCacheEvent(null, null, 4, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($past_events['status'] == 'error'){
             $codeRes = $past_events['statusCode'];
             unset($past_events['statusCode']);
@@ -120,7 +120,7 @@ class HomeController extends Controller
     }
     public function showEvents(Request $request){
         $eventController = app()->make(ServiceEventController::class);
-        $allEvent = $eventController->dataCacheFile(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $allEvent = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($allEvent['status'] == 'error'){
             $codeRes = $allEvent['statusCode'];
             unset($allEvent['statusCode']);
@@ -131,14 +131,14 @@ class HomeController extends Controller
     }
     public function showEventDetail(Request $request, $id){
         $eventController = app()->make(ServiceEventController::class);
-        $eventDetail = $eventController->dataCacheFile(null, $id, null, ['id', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'is_free' , 'link_event', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'], ['id', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'is_free', 'link_event', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'], true, null, false);
+        $eventDetail = $eventController->dataCacheEvent(null, $id, null, ['id', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'is_free' , 'link_event', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'], ['id', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'is_free', 'link_event', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'], true, null, false);
         if($eventDetail['status'] == 'error'){
             $codeRes = $eventDetail['statusCode'];
             unset($eventDetail['statusCode']);
             return response()->json($eventDetail, $codeRes);
         }
         $eventDetail = $eventDetail['data'];
-        $allEvent = $eventController->dataCacheFile(null, null, 3, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $allEvent = $eventController->dataCacheEvent(null, null, 3, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
         if($allEvent['status'] == 'error'){
             $codeRes = $allEvent['statusCode'];
             unset($allEvent['statusCode']);
