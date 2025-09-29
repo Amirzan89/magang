@@ -187,26 +187,26 @@ class EventController extends Controller
         }
         return ['status' => 'success', 'data' => $inp];
     }
-    public function dataCacheEventGroup($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
+    public function dataCacheEventGroup($col = null, $alias = null, $searchFilter = null){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
         }
         $updateFileCache = function(){
-            $eventData = $this->fetchEvents([
+            $eventGroupData = $this->fetchEvents([
                 "userid" => "demo@demo.com",
                 "groupid" => "XCYTUA",
                 "businessid" => "PJLBBS",
                 "sql" => "SELECT id, eventgroup, eventgroupname, imageicon, active FROM event_group",
                 "order" => ""
             ],'/JNonQuery');
-            foreach($eventData as &$item){
+            foreach($eventGroupData as &$item){
                 unset($item['id_event']);
             }
-            if(!file_put_contents(self::$jsonFileEventGroup, json_encode($eventData, JSON_PRETTY_PRINT))){
+            if(!file_put_contents(self::$jsonFileEventGroup, json_encode($eventGroupData, JSON_PRETTY_PRINT))){
                 return ['status' => 'error', 'message' => 'Gagal menyimpan file sistem'];
             }
-            return $eventData;
+            return $eventGroupData;
         };
         $jsonData = [];
         if(!file_exists(self::$jsonFileEventGroup)){
@@ -218,15 +218,7 @@ class EventController extends Controller
             $jsonData = $updateFileCache();
         }
         $result = $jsonData;
-        foreach($result as &$item){
-            $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
-        }
-        switch($con){
-            case 'get_total':
-                return ['status' => 'success', 'data' => count($jsonData)];
-        }
-
-        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle);
+        return self::handleCache($result, null, null, $col, $alias, false, $searchFilter, false);
     }
     public function dataCacheEvent($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
         $directory = storage_path('app/database');
@@ -266,16 +258,17 @@ class EventController extends Controller
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
         }
+        echo json_encode($this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], $searchFilter));
 
-        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle);
+        echo json_encode(self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle));
+        exit();
     }
 
     public function searchEvent(Request $request){
+        $categoryData = $$this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null, false);
         $validator = Validator::make($request->query(), [
             'find' => 'nullable|string|max:100',
-            'f_pop' => 'nullable|string|in:all,trending,booked',
-            'f_univ' => 'nullable|string|in:all,none',
-            'f_category.*' => 'nullable|string|in:all,none,tech,business,design,games,seni,olahraga',
+            'f_category.*' => 'nullable|string|in:all,tech,business,design,games,seni,olahraga',
             'f_startdate' => 'nullable|date',
             'f_enddate' => 'nullable|date',
             'f_pay' => 'nullable|string|in:free,pay,all',

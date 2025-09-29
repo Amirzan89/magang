@@ -102,4 +102,5 @@ Route::post('/', [HomeController::class, 'showHome']);
 Route::post('/about', [HomeController::class, 'showAbout']);
 Route::post('/events', [HomeController::class, 'showEvents']);
 Route::post('/search', [EventController::class, 'searchEvent']);
+Route::post('/events-category', [HomeController::class, 'getEventCategory']);
 Route::post('/events/{id}', [HomeController::class, 'showEventDetail']);

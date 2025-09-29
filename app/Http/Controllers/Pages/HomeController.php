@@ -129,6 +129,16 @@ class HomeController extends Controller
         $enc = app()->make(AESController::class)->encryptResponse($allEvent['data'], $request->input('key'), $request->input('iv'));
         return UtilityController::getView('', $enc, 'json');
     }
+    public function getEventCategory(Request $request){
+        $categoryData = app()->make(ServiceEventController::class)->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null, false);
+        if($categoryData['status'] == 'error'){
+            $codeRes = $categoryData['statusCode'];
+            unset($categoryData['statusCode']);
+            return response()->json($categoryData, $codeRes);
+        }
+        $enc = app()->make(AESController::class)->encryptResponse($categoryData['data'], $request->input('key'), $request->input('iv'));
+        return UtilityController::getView('', $enc, 'json');
+    }
     public function showEventDetail(Request $request, $id){
         $eventController = app()->make(ServiceEventController::class);
         $eventDetail = $eventController->dataCacheEvent(null, $id, null, ['id', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'is_free' , 'link_event', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'], ['id', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'is_free', 'link_event', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'], true, null, false);
