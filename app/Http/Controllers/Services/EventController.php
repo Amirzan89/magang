@@ -92,11 +92,11 @@ class EventController extends Controller
                     }
                     switch($key){
                         case 'category':
-                            if(!array_key_exists('category', $item) || empty($item['category'])){
+                            if(!array_key_exists('eventgroup', $item) || empty($item['eventgroup'])){
                                 return false;
                             }
                             $filterCategories = (array) $value;
-                            $itemCategories = (array) $item['category'];
+                            $itemCategories = (array) $item['eventgroup'];
                             if(count(array_intersect($filterCategories, $itemCategories)) === 0){
                                 return false;
                             }
@@ -258,17 +258,20 @@ class EventController extends Controller
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
         }
-        echo json_encode($this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], $searchFilter));
-
-        echo json_encode(self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle));
-        exit();
+        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle);
     }
 
     public function searchEvent(Request $request){
-        $categoryData = $$this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null, false);
+        $categoryData = $this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null);
+        if($categoryData['status'] === 'error'){
+            $codeRes = $categoryData['statusCode'];
+            unset($categoryData['statusCode']);
+            return response()->json($categoryData, $codeRes);
+        }
+        $categories = collect($categoryData['data'])->pluck('event_group')->implode(',');
         $validator = Validator::make($request->query(), [
             'find' => 'nullable|string|max:100',
-            'f_category.*' => 'nullable|string|in:all,tech,business,design,games,seni,olahraga',
+            "f_category.*' => 'nullable|string|in:$categories",
             'f_startdate' => 'nullable|date',
             'f_enddate' => 'nullable|date',
             'f_pay' => 'nullable|string|in:free,pay,all',
@@ -303,11 +306,13 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $data = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
-        if($data['status'] === 'error'){
-            return response()->json($data, 500);
+        $searchData = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
+        if($searchData['status'] === 'error'){
+            $codeRes = $searchData['statusCode'];
+            unset($searchData['statusCode']);
+            return response()->json($searchData, $codeRes);
         }
-        $enc = app()->make(AESController::class)->encryptResponse($data['data'], $request->input('key'), $request->input('iv'));
+        $enc = app()->make(AESController::class)->encryptResponse($searchData['data'], $request->input('key'), $request->input('iv'));
         return response()->json(['status' => 'success', 'data' => $enc]);
     }
     public function registrationEvents(Request $request){
