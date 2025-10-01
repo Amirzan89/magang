@@ -14,6 +14,6 @@ class VerifyEmail extends Mailable
     public function build(){
         return $this->view('mails.verifyEmail')
         ->with(['email' => $this->data['email'],'code'=>$this->data['code'],'link'=>$this->data['link']])
-        ->from(env('MAIL_FROM_ADDRESS', 'unievents@gmail.com'), env('APP_NAME', 'Smart TrashKu'));
+        ->from(env('MAIL_FROM_ADDRESS', 'unievents@gmail.com'), env('APP_NAME', 'Uni Events'));
     }
 }

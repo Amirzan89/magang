@@ -3,16 +3,20 @@ namespace App\Http\Controllers\Services;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\Security\AESController;
+use App\Mail\EventBookingMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 class EventController extends Controller
 {
     private static $jsonFileEvent;
     private static $jsonFileEventGroup;
+    private static $jsonFileEventBookingCounter;
     public function __construct(){
         self::$jsonFileEvent = storage_path('app/database/events.json');
         self::$jsonFileEventGroup = storage_path('app/database/event-groups.json');
+        self::$jsonFileEventBookingCounter = storage_path('app/database/event_booking_counter.json');
     }
     private function fetchEvents($reqDec = null, $url = null){
         $keyPyxis = env('PYXIS_KEY1');
@@ -315,14 +319,67 @@ class EventController extends Controller
         $enc = app()->make(AESController::class)->encryptResponse($searchData['data'], $request->input('key'), $request->input('iv'));
         return response()->json(['status' => 'success', 'data' => $enc]);
     }
-    public function registrationEvents(Request $request){
+    public function bookingEvent(Request $request){
+        $validator = Validator::make($request->all(), [
+            'nama' => 'required|string|max:100',
+            'email' => 'required|email',
+            'mobileno' => 'required|string|max:20',
+            'gender' => 'required|in:M,F',
+            'qty' => 'required|integer|min:1',
+            'event_group' => 'required|string',
+            'event_id' => 'required|string',
+        ], [
+            'nama.required' => 'Nama wajib diisi',
+            'nama.max' => 'Nama maksimal 100 karakter',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
+            'mobileno.required' => 'Nomor telepon wajib diisi',
+            'gender.required' => 'Jenis kelamin wajib diisi',
+            'gender.in' => 'Jenis kelamin harus M atau F',
+            'qty.required' => 'Jumlah tiket wajib diisi',
+            'qty.min' => 'Jumlah tiket minimal 1',
+            'event_group.required' => 'Event group wajib ada',
+            'event_id.required' => 'Event ID wajib ada',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first()
+            ], 422);
+        }
+        $directory = storage_path('app/database');
+        if(!file_exists($directory)){
+            mkdir($directory, 0755, true);
+        }
+        $counterFile = self::$jsonFileEventBookingCounter;
+        $counter = 1;
+        $registNo = 'REG' . str_pad($counter, 7, '0', STR_PAD_LEFT);
+        if(file_exists($counterFile)){
+            $jsonData = json_decode(file_get_contents($counterFile), true);
+            $counter = isset($jsonData['counter']) ? intval($jsonData['counter']) + 1 : 1;
+        }
+        file_put_contents($counterFile, json_encode(['counter' => str_pad($counter, 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
         $keyPyxis = env('PYXIS_KEY1');
         $ivPyxis = env('PYXIS_IV');
         $reqDec = [
             "userid" => "demo@demo.com",
             "groupid" => "XCYTUA",
             "businessid" => "PJLBBS",
-            "sql" => "INSERT INTO event_registration (keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount, paymentdate, notes)VALUES ('I5RLGI', '5EA9I2', 'SMNR', 'EVT001', 'O', 'REG92139123 ', '2025-08-15', 'Jamal Sikamto', 'jamSIM86@myemail.com', '8136232323', 'M', '1', 'C', '122335465656', '50000', '2025-08-15 ', 'OK')",
+            "sql" => sprintf(
+                "INSERT INTO event_registration 
+                (keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount, paymentdate, notes)
+                VALUES ('I5RLGI', '5EA9I2', '%s', '%s', 'O', '%s', '%s', '%s', '%s', '%s', '%s', %d, 'C', '122335465656', '50000', '%s', 'OK')",
+                addslashes($request->input('event_group')),
+                addslashes($request->input('event_id')),
+                $registNo,
+                now()->toDateString(),
+                addslashes($request->input('nama')),
+                addslashes($request->input('email')),
+                addslashes($request->input('mobileno')),
+                addslashes($request->input('gender')),
+                (int) $request->input('qty'),
+                now()->toDateString()
+            )
         ];
         $bodyData = strtoupper(bin2hex(openssl_encrypt(json_encode($reqDec), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis)));
         $bodyReq = [
@@ -331,9 +388,17 @@ class EventController extends Controller
             'timestamp' => now()->format('YmdHis'),
             'message' => $bodyData,
         ];
-        $res =  json_decode(Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL') . '/JNonQuery', $bodyReq)->body());
-        $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
-        $enc = app()->make(AESController::class)->encryptResponse($decServer['data'], $request->input('key'), $request->input('iv'));
-        return response()->json(['status' => 'success', 'data' => $enc]);
+        $res = Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL') . '/JNonQuery', $bodyReq);
+        $responseJson = json_decode($res->body(), true);
+        $decServer = json_decode(openssl_decrypt(hex2bin($responseJson['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
+        if(isset($decServer['status']) && $decServer['status'] === 'error'){
+            return response()->json(['status' => 'error', 'message' => $decServer['message']], 500);
+        }
+        Mail::to($request->input('email'))->send(new EventBookingMail([
+            'email' => $request->input('email'),
+            'name' => $request->input('nama'),
+            'event_id' => $request->input('event_id')
+        ]));
+        return response()->json(['status' => 'success', 'message' => 'Email sudah dikirimkan']);
     }
 }
