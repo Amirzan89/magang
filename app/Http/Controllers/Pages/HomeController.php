@@ -5,7 +5,6 @@ use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\Services\EventController AS ServiceEventController;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 class HomeController extends Controller
 {
     public function showHome(Request $request){

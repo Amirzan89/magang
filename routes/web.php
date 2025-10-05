@@ -13,6 +13,7 @@ use App\Http\Controllers\Services\Encryption\TestingSessionController;
 use App\Http\Controllers\Security\RSAController;
 
 use App\Http\Controllers\Pages\HomeController;
+use App\Http\Controllers\Pages\AdminController;
 
 use App\Http\Controllers\Services\MailController;
 
@@ -103,6 +104,7 @@ Route::post('/about', [HomeController::class, 'showAbout']);
 Route::post('/events', [HomeController::class, 'showEvents']);
 Route::post('/search', [EventController::class, 'searchEvent']);
 Route::post('/events-category', [HomeController::class, 'getEventCategory']);
-Route::post('/events/{id}', [HomeController::class, 'showEventDetail']);
+Route::post('/event/{id}', [HomeController::class, 'showEventDetail']);
 Route::post('/booking/{id}', [HomeController::class, 'showEventDetail']);
 Route::post('/event-booking', [EventController::class, 'bookingEvent']);
+Route::post('/dashboard', [AdminController::class, 'showDashboard']);

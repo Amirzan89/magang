@@ -261,6 +261,17 @@ class EventController extends Controller
         switch($con){
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
+            case 'get_total_by_category':
+                $categoryData = $this->dataCacheEventGroup(['eventgroup', 'eventgroupname'], ['event_group', 'event_group_name'], null);
+                if($categoryData['status'] === 'error'){
+                    return $categoryData;
+                }
+                $categoryData = $categoryData['data'];
+                $result = collect($jsonData)->groupBy('eventgroup')->map(fn($items, $key) => [
+                    'event_group_name' => collect($categoryData)->firstWhere('event_group', $key)['event_group_name'] ?? $key,
+                    'total_event' => $items->count(),
+                ])->values()->toArray();
+                return ['status' => 'success', 'data' => $result];
         }
         return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle);
     }
