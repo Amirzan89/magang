@@ -103,7 +103,7 @@ Route::post('/', [HomeController::class, 'showHome']);
 Route::post('/about', [HomeController::class, 'showAbout']);
 Route::post('/events', [HomeController::class, 'showEvents']);
 Route::post('/search', [EventController::class, 'searchEvent']);
-Route::post('/events-category', [HomeController::class, 'getEventCategory']);
+Route::post('/event-categories', [HomeController::class, 'getEventCategory']);
 Route::post('/event/{id}', [HomeController::class, 'showEventDetail']);
 Route::post('/booking/{id}', [HomeController::class, 'showEventDetail']);
 Route::post('/event-booking', [EventController::class, 'bookingEvent']);

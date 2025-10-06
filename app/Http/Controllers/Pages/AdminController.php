@@ -36,6 +36,6 @@ class AdminController extends Controller
             'event_group' => $event_group,
         ];
         $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json');
+        return UtilityController::getView('', $enc, 'json_encrypt');
     }
 }

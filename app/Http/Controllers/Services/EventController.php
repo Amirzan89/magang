@@ -32,7 +32,7 @@ class EventController extends Controller
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];
     }
-    private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
+    private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false, $pagination = null){
         if(!is_null($id) && !empty($id) && $id){
             $found = false;
             foreach($inp as &$item){
@@ -46,6 +46,8 @@ class EventController extends Controller
                 return ['status' => 'error', 'message' => 'Event Not Found', 'statusCode' => 404];
             }
         }
+
+        $metaData = null;
 
         $searchF = function(array $inp, array $searchFilter){
             if(empty($searchFilter['search']) || is_null($searchFilter['search'])) return $inp;
@@ -146,6 +148,33 @@ class EventController extends Controller
             }
         }
 
+        if($pagination && is_array($pagination)){
+            $idPage = $pagination['next_page'] ?? null;
+            $pgLimit  = isset($pagination['limit']) && is_numeric($pagination['limit']) ? (int) $pagination['limit'] : null;
+            usort($inp, function ($a, $b) use ($pagination){
+                $getParts = function ($id){
+                    $id = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', $id));
+                    preg_match('/([A-Za-z]+)(\d+)/', $id, $match);
+                    $prefix = $match[1] ?? '';
+                    $number = isset($match[2]) ? (int)$match[2] : 0;
+                    return [$prefix, $number];
+                };
+                [$prefixA, $numA] = $getParts($a[$pagination['column_id']]);
+                [$prefixB, $numB] = $getParts($b[$pagination['column_id']]);
+                return $prefixA === $prefixB ? $numA <=> $numB : strcmp($prefixA, $prefixB);
+            });
+            $eventIds = array_column($inp, $pagination['column_id']);
+            $cursorIndex = $idPage !== null ? array_search($idPage, $eventIds, true) : -1;
+            $inp = array_slice($inp, $cursorIndex + 1, $pgLimit);
+            $nextCursor = $inp && count($inp) > 0 ? end($inp)[$pagination['column_id']] : null;
+            $hasMore = false;
+            if ($nextCursor !== null) {
+                $lastIndex = array_search($nextCursor, $eventIds, true);
+                $hasMore = $lastIndex !== false && ($lastIndex + 1) < count($eventIds);
+            }
+            $metaData = [ 'next_cursor' => $nextCursor, 'has_more' => $hasMore ];
+        }
+
         // shuffle
         if($shuffle){
             shuffle($inp);
@@ -188,10 +217,10 @@ class EventController extends Controller
             }else{
                 $inp = $mapItem($inp);
             }
-        }
-        return ['status' => 'success', 'data' => $inp];
+        }   
+        return ['status' => 'success', 'data' => $inp, 'meta_data' => $metaData];
     }
-    public function dataCacheEventGroup($col = null, $alias = null, $searchFilter = null){
+    public function dataCacheEventGroup($col = null, $alias = null, $searchFilter = null, $pagination = null){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
@@ -222,9 +251,9 @@ class EventController extends Controller
             $jsonData = $updateFileCache();
         }
         $result = $jsonData;
-        return self::handleCache($result, null, null, $col, $alias, false, $searchFilter, false);
+        return self::handleCache($result, null, null, $col, $alias, false, $searchFilter, false, $pagination);
     }
-    public function dataCacheEvent($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false){
+    public function dataCacheEvent($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false, $pagination = null){
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
@@ -273,7 +302,7 @@ class EventController extends Controller
                 ])->values()->toArray();
                 return ['status' => 'success', 'data' => $result];
         }
-        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle);
+        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle, $pagination);
     }
 
     public function searchEvent(Request $request){
@@ -304,12 +333,8 @@ class EventController extends Controller
             'f_pay.in' => 'Filter Harga Invalid',
         ]);
         if ($validator->fails()){
-            $errors = [];
-            foreach($validator->errors()->toArray() as $field => $errorMessages){
-                $errors[$field] = $errorMessages[0];
-                break;
-            }
-            return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 422);
+            $firstError = collect($validator->errors()->all())->first();
+            return response()->json(['status'  => 'error', 'message' => $firstError ?? 'Terjadi kesalahan validasi parameter.'], 422);
         }
         $filters = [
             'category' => $request->query('f_category', []),
@@ -328,7 +353,7 @@ class EventController extends Controller
             return response()->json($searchData, $codeRes);
         }
         $enc = app()->make(AESController::class)->encryptResponse($searchData['data'], $request->input('key'), $request->input('iv'));
-        return response()->json(['status' => 'success', 'data' => $enc]);
+        return response()->json(['status' => 'success', 'message' => $enc]);
     }
     public function bookingEvent(Request $request){
         $validator = Validator::make($request->all(), [
@@ -353,10 +378,8 @@ class EventController extends Controller
             'event_id.required' => 'Event ID wajib ada',
         ]);
         if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $validator->errors()->first()
-            ], 422);
+            $firstError = collect($validator->errors()->all())->first();
+            return response()->json(['status'  => 'error', 'message' => $firstError ?? 'Terjadi kesalahan validasi parameter.'], 422);
         }
         $directory = storage_path('app/database');
         if(!file_exists($directory)){

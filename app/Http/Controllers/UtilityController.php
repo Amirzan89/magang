@@ -33,6 +33,8 @@ class UtilityController extends Controller
                 return response()->json(['status' => 'success']);
             }else if(is_string($cond) && $cond == 'json'){
                 return response()->json(['status' => 'success', 'data' => $data]);
+            }else if(is_string($cond) && $cond == 'json_encrypt'){
+                return response()->json(['status' => 'success', 'message' => $data]);
             }
             return response()->json(['status' => 'error', 'message' => 'invalid request'], 400);
         };

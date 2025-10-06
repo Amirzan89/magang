@@ -5,6 +5,7 @@ use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\Services\EventController AS ServiceEventController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 class HomeController extends Controller
 {
     public function showHome(Request $request){
@@ -65,7 +66,7 @@ class HomeController extends Controller
             'reviews' => $reviews,
         ];
         $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json');
+        return UtilityController::getView('', $enc, 'json_encrypt');
     }
     public function showAbout(Request $request){
         $listNamePhoto = [
@@ -115,18 +116,31 @@ class HomeController extends Controller
             'reviews' => $reviews,
         ];
         $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json');
+        return UtilityController::getView('', $enc, 'json_encrypt');
     }
     public function showEvents(Request $request){
         $eventController = app()->make(ServiceEventController::class);
-        $allEvent = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true);
+        $validator = Validator::make($request->query(), [
+            'next_page' => 'nullable|string|max:100',
+            'limit' => 'nullable|numeric|max:30',
+        ], [
+            'next_page.string' => 'Parameter next_page harus berupa teks.',
+            'next_page.max'    => 'Parameter next_page tidak boleh lebih dari 100 karakter.',
+            'limit.numeric'  => 'Parameter limit harus berupa angka.',
+            'limit.max'      => 'Batas maksimal limit adalah 30 item per halaman.',
+        ]);
+        if ($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return response()->json(['status'  => 'error', 'message' => $firstError ?? 'Terjadi kesalahan validasi parameter.'], 422);
+        }
+        $allEvent = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img'], true, null, true, ['next_page' => $request->query('next_page'), 'limit' => $request->query('limit') ? $request->query('limit') : 5, 'column_id' => 'eventid']);
         if($allEvent['status'] == 'error'){
             $codeRes = $allEvent['statusCode'];
             unset($allEvent['statusCode']);
             return response()->json($allEvent, $codeRes);
         }
-        $enc = app()->make(AESController::class)->encryptResponse($allEvent['data'], $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json');
+        $enc = app()->make(AESController::class)->encryptResponse(['data' => $allEvent['data'], ...$allEvent['meta_data']], $request->input('key'), $request->input('iv'));
+        return UtilityController::getView('', $enc, 'json_encrypt');
     }
     public function getEventCategory(Request $request){
         $categoryData = app()->make(ServiceEventController::class)->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null, false);
@@ -136,7 +150,7 @@ class HomeController extends Controller
             return response()->json($categoryData, $codeRes);
         }
         $enc = app()->make(AESController::class)->encryptResponse($categoryData['data'], $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json');
+        return UtilityController::getView('', $enc, 'json_encrypt');
     }
     public function showEventDetail(Request $request, $id){
         $eventController = app()->make(ServiceEventController::class);
@@ -159,6 +173,6 @@ class HomeController extends Controller
             'all_events' => $allEvent,
         ];
         $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json');
+        return UtilityController::getView('', $enc, 'json_encrypt');
     }
 }
