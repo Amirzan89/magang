@@ -433,6 +433,7 @@ class EventController extends Controller
             'name' => $request->input('nama'),
             'event_id' => $request->input('event_id')
         ]));
-        return response()->json(['status' => 'success', 'message' => 'Email sudah dikirimkan']);
+        $enc = app()->make(AESController::class)->encryptResponse(['message' => 'Email sudah dikirimkan'], $request->input('key'), $request->input('iv'));
+        return response()->json(['status' => 'success', 'message' => $enc]);
     }
 }

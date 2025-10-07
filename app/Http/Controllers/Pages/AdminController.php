@@ -38,4 +38,15 @@ class AdminController extends Controller
         $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
         return UtilityController::getView('', $enc, 'json_encrypt');
     }
+    public function showEventBooked(Request $request){
+        $eventController = app()->make(ServiceEventController::class);
+        $listEvents = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'nama_lokasi', 'link_lokasi'], ['id', 'event_id', 'event_name', 'start_date', 'nama_lokasi', 'link_lokasi'], true, null, true);
+        if($listEvents['status'] == 'error'){
+            $codeRes = $listEvents['statusCode'];
+            unset($listEvents['statusCode']);
+            return response()->json($listEvents, $codeRes);
+        }
+        $enc = app()->make(AESController::class)->encryptResponse($listEvents['data'], $request->input('key'), $request->input('iv'));
+        return UtilityController::getView('', $enc, 'json_encrypt');
+    }
 }

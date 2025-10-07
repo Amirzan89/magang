@@ -18,7 +18,36 @@ use App\Http\Controllers\Pages\AdminController;
 use App\Http\Controllers\Services\MailController;
 
 // use App\Http\Controllers\Security\AESController;
-
+Route::group(['middleware'=>['auth','authorized']], function(){
+    Route::get('/','Page\PublicController@showHome');
+    Route::get('/login', function(Request $request){
+        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    });
+    Route::get('/dashboard', [AdminController::class, 'showDashboard']);
+    Route::get('/profil','Page\HomeController@showProfile');
+    //API only admin route
+    Route::group(['prefix'=>'/admin', 'middleware'=>'throttle:admin'], function(){
+        //page admin
+        Route::get('/', 'Page\AdminController@showAdmin');
+        Route::get('/tambah', 'Page\AdminController@showAdminTambah');
+        Route::get('/{any}', 'Page\AdminController@showAdminEdit');
+        // api for admin
+        Route::post('/create', 'AdminController@tambahAdmin');
+        Route::put('/update', 'AdminController@editAdmin');
+        Route::delete('/delete', 'AdminController@hapusAdmin');
+        Route::post('/login', 'Auth\LoginController@Login')->withoutMiddleware(['auth', 'authorized']);
+        Route::post('/logout', 'AdminController@Logout');
+        Route::group(['prefix'=>'/update'], function(){
+            Route::put('/profile', 'AdminController@updateProfile');
+            Route::put('/password', 'AdminController@updatePassword');
+        });
+        Route::group(['prefix'=>'/download/foto'], function(){
+            Route::get('/','AdminController@getFotoProfile');
+            Route::get('/default','AdminController@getDefaultFoto');
+            Route::get('/{id}','AdminController@getFotoAdmin');
+        });
+    });
+});
 Route::get('/view-aes', function(){
     return view('testing.testingAES');
 });
@@ -108,3 +137,4 @@ Route::post('/event/{id}', [HomeController::class, 'showEventDetail']);
 Route::post('/booking/{id}', [HomeController::class, 'showEventDetail']);
 Route::post('/event-booking', [EventController::class, 'bookingEvent']);
 Route::post('/dashboard', [AdminController::class, 'showDashboard']);
+Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);
