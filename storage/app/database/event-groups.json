@@ -1,71 +1,8 @@
 [
     {
         "id": "1",
-        "eventgroup": "SMNR",
+        "eventgroup": "SMNR  ",
         "eventgroupname": "SEMINAR",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "2",
-        "eventgroup": "SIND",
-        "eventgroupname": "sinden",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "3",
-        "eventgroup": "LDR",
-        "eventgroupname": "ludruk",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "4",
-        "eventgroup": "VOC",
-        "eventgroupname": "vocalis",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "5",
-        "eventgroup": "WAR",
-        "eventgroupname": "waranggono",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "6",
-        "eventgroup": "OKM",
-        "eventgroupname": "organisasi kesenian musik",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "7",
-        "eventgroup": "BAR",
-        "eventgroupname": "barongsai",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "8",
-        "eventgroup": "PLWK",
-        "eventgroupname": "pelawak",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "9",
-        "eventgroup": "REOG",
-        "eventgroupname": "reog",
-        "imageicon": "NA",
-        "active": "Y"
-    },
-    {
-        "id": "10",
-        "eventgroup": "THR",
-        "eventgroupname": "taman hiburan rakyat",
         "imageicon": "NA",
         "active": "Y"
     }

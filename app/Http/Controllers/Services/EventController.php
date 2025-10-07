@@ -232,7 +232,7 @@ class EventController extends Controller
                 "businessid" => "PJLBBS",
                 "sql" => "SELECT id, eventgroup, eventgroupname, imageicon, active FROM event_group",
                 "order" => ""
-            ],'/JNonQuery');
+            ],'/JQuery');
             foreach($eventGroupData as &$item){
                 unset($item['id_event']);
             }
