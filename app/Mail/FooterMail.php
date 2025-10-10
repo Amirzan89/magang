@@ -13,7 +13,7 @@ class FooterMail extends Mailable
     }
     public function build(){
         return $this->view('mails.footerMail')
-        ->with(['email' => $this->data['email'],'code'=>$this->data['code'],'link'=>$this->data['link']])
+        ->with(['email' => $this->data['email']])
         ->from(env('MAIL_FROM_ADDRESS', 'unievents@gmail.com'), env('APP_NAME', 'Uni Events'));
     }
 }

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Services;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Security\AESController;
 use App\Models\User;
 use App\Models\Verifikasi;
 use Illuminate\Http\Request;
@@ -41,10 +42,12 @@ class MailController extends Controller
         }
         //send email
         $data = [
-            //
+            'email' => $request->input('email')
         ];
         // dispatch(new SendFooterMail($data));
         Mail::to($request->input('email'))->send(new FooterMail($data));
+        $enc = app()->make(AESController::class)->encryptResponse(['message' => 'Email sudah dikirimkan'], $request->input('key'), $request->input('iv'));
+        return response()->json(['status' => 'success', 'message' => $enc]);
     }
     public function createVerifyEmail(Request $request, Verifikasi $verify){
         $validator = Validator::make($request->all(), [

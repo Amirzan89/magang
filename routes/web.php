@@ -4,18 +4,19 @@ use App\Http\Controllers\Services\EventController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Request;
+
+use App\Http\Controllers\UtilityController;
+use App\Http\Controllers\Pages\HomeController;
+use App\Http\Controllers\Pages\AdminController;
+
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\UserController;
 
+use App\Http\Controllers\Services\MailController;
 use App\Http\Controllers\Services\Encryption\TestingSimpleController;
 use App\Http\Controllers\Services\Encryption\TestingSessionController;
 use App\Http\Controllers\Security\RSAController;
-
-use App\Http\Controllers\Pages\HomeController;
-use App\Http\Controllers\Pages\AdminController;
-
-use App\Http\Controllers\Services\MailController;
 
 // use App\Http\Controllers\Security\AESController;
 Route::group(['middleware'=>['auth','authorized']], function(){

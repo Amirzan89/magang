@@ -18,20 +18,6 @@ class EventController extends Controller
         self::$jsonFileEventGroup = storage_path('app/database/event-groups.json');
         self::$jsonFileEventBookingCounter = storage_path('app/database/event_booking_counter.json');
     }
-    private function fetchEvents($reqDec = null, $url = null){
-        $keyPyxis = env('PYXIS_KEY1');
-        $ivPyxis = env('PYXIS_IV');
-        $bodyData = strtoupper(bin2hex(openssl_encrypt(json_encode($reqDec), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis)));
-        $bodyReq = [
-            'apikey' => env('PYXIS_KEY2'),
-            'uniqueid' => $ivPyxis,
-            'timestamp' => now()->format('YmdHis'),
-            'message' => $bodyData,
-        ];
-        $res =  Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL'). $url, $bodyReq)->body();
-        $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
-        return $decServer['data'];
-    }
     private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false, $pagination = null){
         if(!is_null($id) && !empty($id) && $id){
             $found = false;
@@ -226,7 +212,7 @@ class EventController extends Controller
             mkdir($directory, 0755, true);
         }
         $updateFileCache = function(){
-            $eventGroupData = $this->fetchEvents([
+            $eventGroupData = app()->make(ThirdPartyController::class)->pyxisAPI([
                 "userid" => "demo@demo.com",
                 "groupid" => "XCYTUA",
                 "businessid" => "PJLBBS",
@@ -259,7 +245,7 @@ class EventController extends Controller
             mkdir($directory, 0755, true);
         }
         $updateFileCache = function(){
-            $eventData = $this->fetchEvents([
+            $eventData = app()->make(ThirdPartyController::class)->pyxisAPI([
                 "userid" => "demo@demo.com",
                 "groupid" => "XCYTUA",
                 "businessid" => "PJLBBS",

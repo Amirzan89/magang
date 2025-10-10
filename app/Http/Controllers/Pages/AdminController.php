@@ -4,6 +4,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\Services\EventController AS ServiceEventController;
+use App\Http\Controllers\Services\ThirdPartyController;
 use Illuminate\Http\Request;
 class AdminController extends Controller
 {
@@ -39,14 +40,14 @@ class AdminController extends Controller
         return UtilityController::getView('', $enc, 'json_encrypt');
     }
     public function showEventBooked(Request $request){
-        $eventController = app()->make(ServiceEventController::class);
-        $listEvents = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'nama_lokasi', 'link_lokasi'], ['id', 'event_id', 'event_name', 'start_date', 'nama_lokasi', 'link_lokasi'], true, null, true);
-        if($listEvents['status'] == 'error'){
-            $codeRes = $listEvents['statusCode'];
-            unset($listEvents['statusCode']);
-            return response()->json($listEvents, $codeRes);
-        }
-        $enc = app()->make(AESController::class)->encryptResponse($listEvents['data'], $request->input('key'), $request->input('iv'));
+        $listBooked = app()->make(ThirdPartyController::class)->pyxisAPI([
+            "userid" => "demo@demo.com",
+            "groupid" => "XCYTUA",
+            "businessid" => "PJLBBS",
+            "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount,  paymentdate, notes FROM event_registration",
+            "order" => ""
+        ],'/JQuery');
+        $enc = app()->make(AESController::class)->encryptResponse($listBooked, $request->input('key'), $request->input('iv'));
         return UtilityController::getView('', $enc, 'json_encrypt');
     }
 }
