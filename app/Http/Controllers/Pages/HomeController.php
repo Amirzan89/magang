@@ -154,7 +154,7 @@ class HomeController extends Controller
     }
     public function showEventDetail(Request $request, $id){
         $eventController = app()->make(ServiceEventController::class);
-        $eventDetail = $eventController->dataCacheEvent(null, $id, null, ['id', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'is_free' , 'link_event', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'], ['id', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'is_free', 'link_event', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'], true, null, false);
+        $eventDetail = $eventController->dataCacheEvent(null, $id, null, ['id', 'eventgroup', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'is_free' , 'link_event', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'], ['id', 'event_group', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'is_free', 'link_event', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'], true, null, false);
         if($eventDetail['status'] == 'error'){
             $codeRes = $eventDetail['statusCode'];
             unset($eventDetail['statusCode']);

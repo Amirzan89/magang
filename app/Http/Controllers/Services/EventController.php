@@ -135,6 +135,14 @@ class EventController extends Controller
             }
         }
 
+        // limit
+        if($limit !== null && is_int($limit) && $limit > 0){
+            $inp = array_slice($inp, 0, $limit);
+            if($limit === 1){
+                $inp = empty($inp) ? [] : $inp[0];
+            }
+        }
+
         if($pagination && is_array($pagination)){
             $idPage = $pagination['next_page'] ?? null;
             $pgLimit = isset($pagination['limit']) && is_numeric($pagination['limit']) ? (int) $pagination['limit'] : null;
@@ -150,8 +158,8 @@ class EventController extends Controller
                 [$prefixB, $numB] = $getParts($b[$pagination['column_id']]);
                 return $prefixA === $prefixB ? $numA <=> $numB : strcmp($prefixA, $prefixB);
             });
-            $eventIds   = array_column($inp, $pagination['column_id']);
-            $totalData  = count($eventIds);
+            $eventIds = array_column($inp, $pagination['column_id']);
+            $totalData = count($eventIds);
             $cursorIndex = $idPage !== null ? array_search($idPage, $eventIds, true) : -1;
             if($pagination['is_first_time'] && $idPage !== null && $cursorIndex >= 0){
                 $inp = array_slice($inp, 0, ($cursorIndex + 1) + $pgLimit);
@@ -170,14 +178,6 @@ class EventController extends Controller
         // shuffle
         if($shuffle){
             shuffle($inp);
-        }
-
-        // limit
-        if($limit !== null && is_int($limit) && $limit > 0){
-            $inp = array_slice($inp, 0, $limit);
-            if($limit === 1){
-                $inp = empty($inp) ? [] : $inp[0];
-            }
         }
 
         //format date
@@ -356,24 +356,24 @@ class EventController extends Controller
     public function bookingEvent(Request $request){
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:100',
-            'email' => 'required|email',
-            'mobileno' => 'required|string|max:20',
             'gender' => 'required|in:M,F',
-            'qty' => 'required|integer|min:1',
+            'mobileno' => 'required|string|max:20',
+            'email' => 'required|email',
             'event_group' => 'required|string',
             'event_id' => 'required|string',
+            'qty' => 'required|integer|min:1',
         ], [
             'nama.required' => 'Nama wajib diisi',
             'nama.max' => 'Nama maksimal 100 karakter',
-            'email.required' => 'Email wajib diisi',
-            'email.email' => 'Format email tidak valid',
-            'mobileno.required' => 'Nomor telepon wajib diisi',
             'gender.required' => 'Jenis kelamin wajib diisi',
             'gender.in' => 'Jenis kelamin harus M atau F',
-            'qty.required' => 'Jumlah tiket wajib diisi',
-            'qty.min' => 'Jumlah tiket minimal 1',
+            'mobileno.required' => 'Nomor telepon wajib diisi',
+            'email.required' => 'Email wajib diisi',
+            'email.email' => 'Format email tidak valid',
             'event_group.required' => 'Event group wajib ada',
             'event_id.required' => 'Event ID wajib ada',
+            'qty.required' => 'Jumlah tiket wajib diisi',
+            'qty.min' => 'Jumlah tiket minimal 1',
         ]);
         if ($validator->fails()) {
             $firstError = collect($validator->errors()->all())->first();
@@ -398,9 +398,7 @@ class EventController extends Controller
             "groupid" => "XCYTUA",
             "businessid" => "PJLBBS",
             "sql" => sprintf(
-                "INSERT INTO event_registration 
-                (keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount, paymentdate, notes)
-                VALUES ('I5RLGI', '5EA9I2', '%s', '%s', 'O', '%s', '%s', '%s', '%s', '%s', '%s', %d, 'C', '122335465656', '50000', '%s', 'OK')",
+                "INSERT INTO event_registration (keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount, paymentdate, notes) VALUES ('I5RLGI', '5EA9I2', '%s', '%s', 'O', '%s', '%s', '%s', '%s', '%s', '%s', %d, 'C', '122335465656', '50000', '%s', 'OK')",
                 addslashes($request->input('event_group')),
                 addslashes($request->input('event_id')),
                 $registNo,
