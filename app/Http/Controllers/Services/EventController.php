@@ -38,6 +38,7 @@ class EventController extends Controller
         $searchF = function(array $inp, array $searchFilter){
             if(empty($searchFilter['search']) || is_null($searchFilter['search'])) return $inp;
             $query = $searchFilter['search']['keywoard'];
+            if(empty($query) || is_null($query)) return [];
             $searchableFields = array_key_exists('fields', $searchFilter['search']) ? $searchFilter['search']['fields'] : ['eventname'];
             $caseSensitive = $searchFilter['search']['case_sensitive'] ?? false;
             $keywords = preg_split('/\s+/', $caseSensitive ? $query : strtolower($query));
@@ -136,9 +137,9 @@ class EventController extends Controller
 
         if($pagination && is_array($pagination)){
             $idPage = $pagination['next_page'] ?? null;
-            $pgLimit  = isset($pagination['limit']) && is_numeric($pagination['limit']) ? (int) $pagination['limit'] : null;
-            usort($inp, function ($a, $b) use ($pagination){
-                $getParts = function ($id){
+            $pgLimit = isset($pagination['limit']) && is_numeric($pagination['limit']) ? (int) $pagination['limit'] : null;
+            usort($inp, function($a, $b) use ($pagination){
+                $getParts = function($id){
                     $id = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', $id));
                     preg_match('/([A-Za-z]+)(\d+)/', $id, $match);
                     $prefix = $match[1] ?? '';
@@ -149,16 +150,21 @@ class EventController extends Controller
                 [$prefixB, $numB] = $getParts($b[$pagination['column_id']]);
                 return $prefixA === $prefixB ? $numA <=> $numB : strcmp($prefixA, $prefixB);
             });
-            $eventIds = array_column($inp, $pagination['column_id']);
+            $eventIds   = array_column($inp, $pagination['column_id']);
+            $totalData  = count($eventIds);
             $cursorIndex = $idPage !== null ? array_search($idPage, $eventIds, true) : -1;
-            $inp = array_slice($inp, $cursorIndex + 1, $pgLimit);
+            if($pagination['is_first_time'] && $idPage !== null && $cursorIndex >= 0){
+                $inp = array_slice($inp, 0, ($cursorIndex + 1) + $pgLimit);
+            }else{
+                $inp = array_slice($inp, $cursorIndex + 1, $pgLimit);
+            }
             $nextCursor = $inp && count($inp) > 0 ? end($inp)[$pagination['column_id']] : null;
             $hasMore = false;
-            if ($nextCursor !== null) {
+            if($nextCursor !== null){
                 $lastIndex = array_search($nextCursor, $eventIds, true);
                 $hasMore = $lastIndex !== false && ($lastIndex + 1) < count($eventIds);
             }
-            $metaData = [ 'next_cursor' => $nextCursor, 'has_more' => $hasMore ];
+            $metaData = [ 'next_cursor' => $nextCursor, 'has_more' => $hasMore, 'total_items' => $totalData ];
         }
 
         // shuffle
@@ -305,6 +311,8 @@ class EventController extends Controller
             'f_startdate' => 'nullable|date',
             'f_enddate' => 'nullable|date',
             'f_pay' => 'nullable|string|in:free,pay,all',
+            'next_page' => 'nullable|string|max:100',
+            'limit' => 'nullable|numeric|max:30',
         ], [
             'find.string' => 'Pencarian harus string',
             'find.max' => 'Pencarian maksimal 100 karakter',
@@ -317,6 +325,10 @@ class EventController extends Controller
             'f_enddate.date' => 'Filter Rentang Tanggal Harus tanggal',
             'f_pay.string' => 'Filter Harga Harus string',
             'f_pay.in' => 'Filter Harga Invalid',
+            'next_page.string' => 'Parameter next_page harus berupa teks.',
+            'next_page.max'    => 'Parameter next_page tidak boleh lebih dari 100 karakter.',
+            'limit.numeric'  => 'Parameter limit harus berupa angka.',
+            'limit.max'      => 'Batas maksimal limit adalah 30 item per halaman.',
         ]);
         if ($validator->fails()){
             $firstError = collect($validator->errors()->all())->first();
@@ -332,13 +344,13 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $searchData = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false);
+        $searchData = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false, ['next_page' => $request->query('next_page'), 'limit' => $request->query('limit') ? $request->query('limit') : 5, 'column_id' => 'eventid', 'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time']);
         if($searchData['status'] === 'error'){
             $codeRes = $searchData['statusCode'];
             unset($searchData['statusCode']);
             return response()->json($searchData, $codeRes);
         }
-        $enc = app()->make(AESController::class)->encryptResponse($searchData['data'], $request->input('key'), $request->input('iv'));
+        $enc = app()->make(AESController::class)->encryptResponse(['data' => $searchData['data'], ...$searchData['meta_data']], $request->input('key'), $request->input('iv'));
         return response()->json(['status' => 'success', 'message' => $enc]);
     }
     public function bookingEvent(Request $request){

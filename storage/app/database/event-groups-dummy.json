@@ -68,5 +68,75 @@
         "eventgroupname": "taman hiburan rakyat",
         "imageicon": "NA",
         "active": "Y"
+    },
+    {
+        "id": "11",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "12",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "13",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "14",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "15",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "16",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "17",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "18",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "19",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
+    },
+    {
+        "id": "20",
+        "eventgroup": "THR",
+        "eventgroupname": "taman hiburan rakyat",
+        "imageicon": "NA",
+        "active": "Y"
     }
 ]
