@@ -52,7 +52,7 @@ class HomeController extends Controller
             $keys = array_keys($listNamePhoto);
             $randomKey = $keys[array_rand($keys)];
             $reviews[] = [
-                'id' => $i,
+                'review_id' => 'REW' . $i,
                 'name'   => $randomKey,
                 'photo'  => $listNamePhoto[$randomKey],
                 'rating' => mt_rand($minStar * 2, $maxStar * 2) / 2,
@@ -97,7 +97,7 @@ class HomeController extends Controller
             $keys = array_keys($listNamePhoto);
             $randomKey = $keys[array_rand($keys)];
             $reviews[] = [
-                'id' => $i,
+                'review_id' => 'REW' . $i,
                 'name'   => $randomKey,
                 'photo'  => $listNamePhoto[$randomKey],
                 'rating' => mt_rand($minStar * 2, $maxStar * 2) / 2,

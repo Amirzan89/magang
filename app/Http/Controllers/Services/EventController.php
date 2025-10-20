@@ -63,54 +63,38 @@ class EventController extends Controller
             if(!array_filter($searchFilter['filters'] ?? [], fn($v) => $v !== null && $v !== '')){
                 return $inp;
             }
-            return array_filter($inp, function ($item) use ($searchFilter){
-                if(!empty($searchFilter['filters']['startdate']) && !empty($searchFilter['filters']['enddate'])){
-                    return (strtotime($item['startdate']) >= strtotime($searchFilter['filters']['startdate'])) && (strtotime($item['enddate']) <= strtotime($searchFilter['filters']['enddate']));
-                }else{
-                    if(!empty($searchFilter['filters']['startdate'])){
-                        if(strtotime($item['startdate']) >= strtotime($searchFilter['filters']['startdate'])){
+            $filtered = $inp;
+            foreach($searchFilter['filters'] as $key => $value){
+                if($value === null || $value === '' || $value === []) continue;
+                $filtered = array_filter($filtered, function($item) use ($key, $value, $searchFilter) {
+                    switch($key) {
+                        case 'startdate':
+                        case 'enddate':
+                            $start = !empty($searchFilter['filters']['startdate']) ? strtotime($searchFilter['filters']['startdate']) : null;
+                            $end = !empty($searchFilter['filters']['enddate']) ? strtotime($searchFilter['filters']['enddate']) : null;
+                            $itemStart = strtotime($item['startdate']);
+                            $itemEnd   = strtotime($item['enddate']);
+                            if($start && $end){
+                                return $itemStart >= $start && $itemEnd <= $end;
+                            }else if($start){
+                                return $itemStart >= $start;
+                            }else if($end){
+                                return $itemEnd <= $end;
+                            }
                             return true;
-                        }
-                    }
-                    if(!empty($searchFilter['filters']['enddate'])){
-                        if(strtotime($item['enddate']) <= strtotime($searchFilter['filters']['enddate'])){
-                            return true;
-                        }
-                    }
-                }
-                foreach($searchFilter['filters'] as $key => $value){
-                    if($value === null || $value === '' || $value === []){
-                        continue;
-                    }
-                    switch($key){
                         case 'category':
-                            if(!array_key_exists('eventgroup', $item) || empty($item['eventgroup'])){
-                                return false;
-                            }
                             $filterCategories = (array) $value;
-                            $itemCategories = (array) $item['eventgroup'];
-                            if(count(array_intersect($filterCategories, $itemCategories)) === 0){
-                                return false;
-                            }
-                            break;
-
+                            $itemCategories = (array)($item['eventgroup'] ?? []);
+                            return count(array_intersect($filterCategories, $itemCategories)) > 0;
                         case 'is_free':
-                            if($value === 'all'){
-                                return true;
-                            }
-                            if(!(($value === 'free' && $item['is_free']) || ($value === 'pay' && !$item['is_free']))){
-                                return false;
-                            }
-                            break;
-
+                            if ($value === 'all') return true;
+                            return ($value === 'free') ? $item['is_free'] : !$item['is_free'];
                         default:
-                            if($item[$key] != $value){
-                                return false;
-                            }
+                            return isset($item[$key]) && $item[$key] == $value;
                     }
-                }
-                return true;
-            });
+                });
+            }
+            return $filtered;
         };
 
         if($searchFilter){
