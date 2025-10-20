@@ -41,11 +41,11 @@ class MailController extends Controller
             return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 400);
         }
         //send email
-        $data = [
-            'email' => $request->input('email')
-        ];
+        // $data = [
+        //     'email' => $request->input('email')
+        // ];
         // dispatch(new SendFooterMail($data));
-        Mail::to($request->input('email'))->send(new FooterMail($data));
+        // Mail::to($request->input('email'))->send(new FooterMail($data));
         $enc = app()->make(AESController::class)->encryptResponse(['message' => 'Email sudah dikirimkan'], $request->input('key'), $request->input('iv'));
         return response()->json(['status' => 'success', 'message' => $enc]);
     }

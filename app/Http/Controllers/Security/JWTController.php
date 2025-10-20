@@ -4,7 +4,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\UserController;
 use App\Models\Admin;
 use App\Models\RefreshToken;
-use App\Models\Auth;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -85,16 +84,16 @@ class JWTController extends Controller
     //create token and refresh token
     public function createJWTWebsite($email, RefreshToken $refreshToken){
         try{
-            $authData = Auth::select()->whereRaw("BINARY email = ?",[$email])->first();
+            $authData = User::select()->whereRaw("BINARY email = ?",[$email])->first();
             if ($authData === null){
                 return ['status'=>'error','messsage'=>'email not found','code'=>400];
             }
             //check total login on website
             $number = $this->checkTotalLogin(['email'=>$email], 'website');
             $authData = $authData->toArray();
-            $idAuth = $authData['id_auth'];
-            $authData[] = !in_array($authData['role'], ['super_admin', 'admin']) ? User::select()->where('id_auth', $idAuth)->first()->toArray() : Admin::select()->where('id_auth', $idAuth)->first()->toArray();
-            unset($authData['id_auth']);
+            $idUser = $authData['id_user'];
+            $authData[] = User::select()->where('id_user', $idUser)->first()->toArray();
+            unset($authData['id_user']);
             unset($authData['uuid']);
             unset($authData['password']);
             unset($authData['role']);
@@ -117,7 +116,7 @@ class JWTController extends Controller
                 $refreshToken->email = $email;
                 $refreshToken->token = $Rtoken;
                 $refreshToken->number = 3;
-                $refreshToken->id_auth = $idAuth;
+                $refreshToken->id_user = $idUser;
                 if(!$refreshToken->save()){
                     return ['status'=>'error','message'=>'error saving token','code'=>500];
                 }
@@ -128,7 +127,7 @@ class JWTController extends Controller
             //if user has not login
             }else{
                 $refreshToken->email = $email;
-                $refreshToken->id_auth = $idAuth;
+                $refreshToken->id_user = $idUser;
                 $number = $this->checkTotalLogin(['email'=>$email], 'website');
                 if($number['status'] == 'error'){
                     $authData['number'] = 1;

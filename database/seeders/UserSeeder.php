@@ -23,8 +23,8 @@ class UserSeeder extends Seeder
                 // 'jenis_kelamin'=>['laki-laki', 'perempuan'][rand(0, 1)],
                 // 'no_telpon'=>'0852'.mt_rand(20000000,99999999),
                 // 'role'=>'user',
-                'email'=>"UserTesting".$i."@gmail.com",
-                'password'=>Hash::make('User@1234567890'),
+                'email'=>"AdminTesting".$i."@gmail.com",
+                'password'=>Hash::make('Admin@1234567890'),
                 'created_at'=>Carbon::now(),
                 'updated_at'=>Carbon::now()
             ]);

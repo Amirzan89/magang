@@ -10,7 +10,6 @@ use App\Http\Controllers\Pages\HomeController;
 use App\Http\Controllers\Pages\AdminController;
 
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\UserController;
 
 use App\Http\Controllers\Services\MailController;
@@ -135,7 +134,7 @@ Route::group(['prefix'=>'/api'], function(){
             Route::post('/email', [UserController::class, 'verifyEmail'])->withoutMiddleware(['auth', 'authorized']);
         });
     });
-    Route::group(['prefix'=>'/users'], function(){
+    Route::group(['prefix'=>'/admin'], function(){
         Route::post('/login', [LoginController::class, 'login'])->withoutMiddleware(['auth', 'authorized']);
         Route::post('/login-google', [LoginController::class, 'loginGoogle'])->withoutMiddleware(['auth', 'authorized']);
         Route::post('/check-email', [RegisterController::class, 'checkEmailAvailability'])->withoutMiddleware(['auth', 'authorized']);

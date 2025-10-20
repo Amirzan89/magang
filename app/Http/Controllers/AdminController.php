@@ -5,7 +5,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
-use App\Models\Auth;
+use App\Models\User;
 use App\Models\Admin;
 class AdminController extends Controller
 {
@@ -42,10 +42,10 @@ class AdminController extends Controller
             }
             return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 400);
         }
-        if(Auth::select("email")->whereRaw("BINARY email = ?",[$rt->input('email')])->exists()){
+        if(User::select("email")->whereRaw("BINARY email = ?",[$rt->input('email')])->exists()){
             return response()->json(['status'=>'error','message'=>'Email sudah digunakan'],400);
         }
-        $idAuth = Auth::insertGetId([
+        $idAuth = User::insertGetId([
             'email' => $rt->input('email'),
             'password' => Hash::make($rt->input('password')),
             'role'=>$rt->input('role'),
@@ -94,13 +94,13 @@ class AdminController extends Controller
             return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 400);
         }
         $admin = Admin::select('auth.id_auth', 'auth.password', 'auth.role', 'admin.foto')->where('uuid',$rt->input('uuid'))->join('auth', 'admin.id_auth', '=', 'auth.id_auth')->firstOrFail();
-        if(!is_null($rt->input('email') || !empty($rt->input('email'))) && $rt->input('email') != $admin['email'] && Auth::whereRaw("BINARY email = ?",[$rt->input('email')])->exists()){
+        if(!is_null($rt->input('email') || !empty($rt->input('email'))) && $rt->input('email') != $admin['email'] && User::whereRaw("BINARY email = ?",[$rt->input('email')])->exists()){
             return response()->json(['status' => 'error', 'message' => 'Email sudah digunakan'], 400);
         }
         if(!is_null($rt->input('role')) && !empty($rt->input('role')) && !in_array($rt->input('role'), ['super_admin', 'admin_chat', 'admin_pemesanan'])){
             return response()->json(['status' => 'error', 'message' => 'Invalid Role'], 400);
         }
-        $uT = Auth::where('id_auth', $admin['id_auth'])->update([
+        $uT = User::where('id_auth', $admin['id_auth'])->update([
             'email' => (empty($rt->input('email')) || is_null($rt->input('email'))) ? $admin['email'] : $rt->input('email'),
             'password' => (empty($rt->input('password')) || is_null($rt->input('password'))) ? $admin['password']: Hash::make($rt->input('password')),
             'role' => (empty($rt->input('role')) || is_null($rt->input('role'))) ? $admin['role'] : $rt->input('role'),
@@ -136,7 +136,7 @@ class AdminController extends Controller
         if(!is_null($rt->input('email') || !empty($rt->input('email'))) && $rt->input('email') != $rt->user()['email'] && Admin::whereRaw("BINARY email = ?",[$rt->input('email')])->exists()){
             return response()->json(['status' => 'error', 'message' => 'Email sudah digunakan'], 400);
         }
-        $updatedAuthProfile = Auth::where('id_auth',$rt->user()['id_auth'])->update([
+        $updatedAuthProfile = User::where('id_auth',$rt->user()['id_auth'])->update([
             'email'=>(is_null($rt->input('email')) || empty($rt->input('email'))) ? $rt->user()['email'] : $rt->input('email'),
         ]);
         $updateProfile = Admin::where('id_auth',$rt->user()['id_auth'])->update([
@@ -190,11 +190,11 @@ class AdminController extends Controller
         if($pass !== $passConfirm){
             return response()->json(['status'=>'error','message'=>'Password Harus Sama'],400);
         }
-        $profile = Auth::select('password')->where('id_auth',$rt->user()['id_auth'])->firstOrFail();
+        $profile = User::select('password')->where('id_auth',$rt->user()['id_auth'])->firstOrFail();
         if(!password_verify($passOld,$profile->password)){
             return response()->json(['status'=>'error','message'=>'Password salah'],400);
         }
-        $updatePassword = Auth::where('id_auth',$rt->user()['id_auth'])->update([
+        $updatePassword = User::where('id_auth',$rt->user()['id_auth'])->update([
             'password' => Hash::make($pass),
         ]);
         if(!$updatePassword){

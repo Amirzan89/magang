@@ -62,11 +62,7 @@ class EventController extends Controller
             }
             return array_filter($inp, function ($item) use ($searchFilter){
                 if(!empty($searchFilter['filters']['startdate']) && !empty($searchFilter['filters']['enddate'])){
-                    $eventStart  = strtotime($item['startdate']);
-                    $eventEnd    = strtotime($item['enddate']);
-                    $filterStart = strtotime($searchFilter['filters']['startdate']);
-                    $filterEnd   = strtotime($searchFilter['filters']['enddate']);
-                    return $eventStart <= $filterEnd && $eventEnd >= $filterStart;
+                    return (strtotime($item['startdate']) >= strtotime($searchFilter['filters']['startdate'])) && (strtotime($item['enddate']) <= strtotime($searchFilter['filters']['enddate']));
                 }else{
                     if(!empty($searchFilter['filters']['startdate'])){
                         if(strtotime($item['startdate']) >= strtotime($searchFilter['filters']['startdate'])){
@@ -314,8 +310,8 @@ class EventController extends Controller
         $validator = Validator::make($request->query(), [
             'find' => 'nullable|string|max:100',
             "f_category.*' => 'nullable|string|in:$categories",
-            'f_startdate' => 'nullable|date',
-            'f_enddate' => 'nullable|date',
+            'f_sr_date' => 'nullable|date',
+            'f_er_date' => 'nullable|date',
             'f_pay' => 'nullable|string|in:free,pay,all',
             'next_page' => 'nullable|string|max:100',
             'limit' => 'nullable|numeric|max:30',
@@ -327,8 +323,8 @@ class EventController extends Controller
             'f_univ.in' => 'Filter Universitas Invalid',
             'f_univ.string' => 'Filter Universitas harus string',
             'f_category.*.in' => 'Filter Kategori Invalid',
-            'f_startdate.date' => 'Filter Rentang Tanggal Harus tanggal',
-            'f_enddate.date' => 'Filter Rentang Tanggal Harus tanggal',
+            'f_sr_date.date' => 'Filter Rentang Tanggal Harus tanggal',
+            'f_er_date.date' => 'Filter Rentang Tanggal Harus tanggal',
             'f_pay.string' => 'Filter Harga Harus string',
             'f_pay.in' => 'Filter Harga Invalid',
             'next_page.string' => 'Parameter next_page harus berupa teks.',
@@ -345,8 +341,8 @@ class EventController extends Controller
             // 'popular' => $request->query('f_pop'),
             // 'university' => $request->query('f_univ'),
             // 'eventgroup' => $request->query('f_category'),
-            'startdate' => $request->query('f_startdate') ?: null,
-            'enddate' => $request->query('f_enddate') ?: null,
+            'startdate' => $request->query('f_sr_date') ?: null,
+            'enddate' => $request->query('f_er_date') ?: null,
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
@@ -430,12 +426,11 @@ class EventController extends Controller
         if(isset($decServer['status']) && $decServer['status'] === 'error'){
             return response()->json(['status' => 'error', 'message' => $decServer['message']], 500);
         }
-        Mail::to($request->input('email'))->send(new EventBookingMail([
-            'email' => $request->input('email'),
-            'name' => $request->input('nama'),
-            'event_id' => $request->input('event_id')
-        ]));
-        $enc = app()->make(AESController::class)->encryptResponse(['message' => 'Email sudah dikirimkan'], $request->input('key'), $request->input('iv'));
-        return response()->json(['status' => 'success', 'message' => $enc]);
+        // Mail::to($request->input('email'))->send(new EventBookingMail([
+        //     'email' => $request->input('email'),
+        //     'name' => $request->input('nama'),
+        //     'event_id' => $request->input('event_id')
+        // ]));
+        return response()->json(['status' => 'success', 'message' => app()->make(AESController::class)->encryptResponse(['message' => 'Booking Event telah berhasil'], $request->input('key'), $request->input('iv'))]);
     }
 }
