@@ -19,7 +19,7 @@ class ThirdPartyController extends Controller
             'uniqueid' => $ivPyxis,
             'timestamp' => now()->format('YmdHis'),
             'message' => $bodyData,
-        ];
+        ];  
         $res =  Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL'). $url, $bodyReq)->body();
         $decServer = json_decode(openssl_decrypt(hex2bin(json_decode($res, true)['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
         return $decServer['data'];

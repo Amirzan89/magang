@@ -19,36 +19,36 @@ use App\Http\Controllers\Services\Encryption\TestingSessionController;
 use App\Http\Controllers\Security\RSAController;
 
 // use App\Http\Controllers\Security\AESController;
-Route::group(['middleware'=>['auth','authorized']], function(){
-    Route::get('/','Page\PublicController@showHome');
-    Route::get('/login', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
-    });
-    Route::get('/dashboard', [AdminController::class, 'showDashboard']);
-    Route::get('/profil','Page\HomeController@showProfile');
-    //API only admin route
-    Route::group(['prefix'=>'/admin', 'middleware'=>'throttle:admin'], function(){
-        //page admin
-        Route::get('/', 'Page\AdminController@showAdmin');
-        Route::get('/tambah', 'Page\AdminController@showAdminTambah');
-        Route::get('/{any}', 'Page\AdminController@showAdminEdit');
-        // api for admin
-        Route::post('/create', 'AdminController@tambahAdmin');
-        Route::put('/update', 'AdminController@editAdmin');
-        Route::delete('/delete', 'AdminController@hapusAdmin');
-        Route::post('/login', 'Auth\LoginController@Login')->withoutMiddleware(['auth', 'authorized']);
-        Route::post('/logout', 'AdminController@Logout');
-        Route::group(['prefix'=>'/update'], function(){
-            Route::put('/profile', 'AdminController@updateProfile');
-            Route::put('/password', 'AdminController@updatePassword');
-        });
-        Route::group(['prefix'=>'/download/foto'], function(){
-            Route::get('/','AdminController@getFotoProfile');
-            Route::get('/default','AdminController@getDefaultFoto');
-            Route::get('/{id}','AdminController@getFotoAdmin');
-        });
-    });
-});
+// Route::group(['middleware'=>['auth','authorized']], function(){
+//     Route::get('/','Page\PublicController@showHome');
+//     // Route::get('/login', function(Request $request){
+//     //     return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+//     // });
+//     // Route::get('/dashboard', [AdminController::class, 'showDashboard']);
+//     Route::get('/profil','Page\HomeController@showProfile');
+//     //API only admin route
+//     Route::group(['prefix'=>'/admin', 'middleware'=>'throttle:admin'], function(){
+//         //page admin
+//         Route::get('/', 'Page\AdminController@showAdmin');
+//         Route::get('/tambah', 'Page\AdminController@showAdminTambah');
+//         Route::get('/{any}', 'Page\AdminController@showAdminEdit');
+//         // api for admin
+//         Route::post('/create', 'AdminController@tambahAdmin');
+//         Route::put('/update', 'AdminController@editAdmin');
+//         Route::delete('/delete', 'AdminController@hapusAdmin');
+//         Route::post('/login', 'Auth\LoginController@Login')->withoutMiddleware(['auth', 'authorized']);
+//         Route::post('/logout', 'AdminController@Logout');
+//         Route::group(['prefix'=>'/update'], function(){
+//             Route::put('/profile', 'AdminController@updateProfile');
+//             Route::put('/password', 'AdminController@updatePassword');
+//         });
+//         Route::group(['prefix'=>'/download/foto'], function(){
+//             Route::get('/','AdminController@getFotoProfile');
+//             Route::get('/default','AdminController@getDefaultFoto');
+//             Route::get('/{id}','AdminController@getFotoAdmin');
+//         });
+//     });
+// });
 Route::get('/view-aes', function(){
     return view('testing.testingAES');
 });
@@ -89,53 +89,81 @@ Route::get('/tailwind', function(){
 });
 Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
-Route::post('/handshake', [RSAController::class, 'handshake_rsa']);
-Route::post('/footer-mail', [MailController::class, 'sendMailFooter']);
 
-Route::group(['prefix'=>'/verify'], function(){
-    Route::group(['prefix'=>'/create'], function(){ 
-        Route::post('/password', [MailController::class, 'createForgotPassword'])->withoutMiddleware(['auth', 'authorized']);
-        Route::post('/email',[MailController::class, 'createVerifyEmail'])->withoutMiddleware(['auth', 'authorized']);
-    });
-    Route::group(['prefix'=>'/password'], function(){
-        // Route::get('/{any?}', [UserController::class, 'getChangePass']'Mobile\PengelolaController@getChangePass')->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
-        // Route::post('/',[UserController::class, 'changePassEmail'])->withoutMiddleware(['auth', 'authorized']);
-    });
-    Route::group(['prefix'=>'/email'], function(){
-        Route::get('/{any?}', [UserController::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
-        Route::post('/',[UserController::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
-    });
-    Route::group(['prefix'=>'/otp'], function(){
-        Route::post('/password', [UserController::class, 'getChangePass'])->withoutMiddleware(['auth', 'authorized']);
-        Route::post('/email', [UserController::class, 'verifyEmail'])->withoutMiddleware(['auth', 'authorized']);
-    });
+
+
+Route::get('/', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
 });
-Route::group(['prefix'=>'/users'], function(){
-    Route::post('/login', [LoginController::class, 'login'])->withoutMiddleware(['auth', 'authorized']);
-    Route::post('/login-google', [LoginController::class, 'loginGoogle'])->withoutMiddleware(['auth', 'authorized']);
-    Route::post('/check-email', [RegisterController::class, 'checkEmailAvailability'])->withoutMiddleware(['auth', 'authorized']);
-    Route::post('/register', [RegisterController::class, 'register'])->withoutMiddleware(['auth', 'authorized']);
-    Route::group(['prefix'=>'/profile'], function(){
-        Route::post('/', [UserController::class, 'getProfile']);
-        Route::group(['prefix'=>'/profile'], function(){
-            Route::post('/', [UserController::class, 'updateProfile']);
-            Route::post('/uploadFoto', [UserController::class, 'uploadFoto'])->withoutMiddleware(['auth', 'authorized']);
-            Route::put('/password', [UserController::class, 'updatePassword']);
+Route::get('/about', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+});
+Route::get('/events', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+});
+Route::get('/search', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+});
+Route::get('/event/{id}', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+});
+Route::get('/booking/{id}', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+});
+Route::get('/event-booked', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+});
+Route::get('/login', function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+});
+Route::group(['prefix'=>'/api'], function(){
+    Route::group(['prefix'=>'/verify'], function(){
+        Route::group(['prefix'=>'/create'], function(){ 
+            Route::post('/password', [MailController::class, 'createForgotPassword'])->withoutMiddleware(['auth', 'authorized']);
+            Route::post('/email',[MailController::class, 'createVerifyEmail'])->withoutMiddleware(['auth', 'authorized']);
         });
-        Route::post('/foto', [UserController::class, 'checkFotoProfile']);
+        Route::group(['prefix'=>'/password'], function(){
+            // Route::get('/{any?}', [UserController::class, 'getChangePass']'Mobile\PengelolaController@getChangePass')->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
+            // Route::post('/',[UserController::class, 'changePassEmail'])->withoutMiddleware(['auth', 'authorized']);
+        });
+        Route::group(['prefix'=>'/email'], function(){
+            Route::get('/{any?}', [UserController::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
+            Route::post('/',[UserController::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth', 'authorized']);
+        });
+        Route::group(['prefix'=>'/otp'], function(){
+            Route::post('/password', [UserController::class, 'getChangePass'])->withoutMiddleware(['auth', 'authorized']);
+            Route::post('/email', [UserController::class, 'verifyEmail'])->withoutMiddleware(['auth', 'authorized']);
+        });
     });
-    Route::post('/logout', [UserController::class, 'logout']);
+    Route::group(['prefix'=>'/users'], function(){
+        Route::post('/login', [LoginController::class, 'login'])->withoutMiddleware(['auth', 'authorized']);
+        Route::post('/login-google', [LoginController::class, 'loginGoogle'])->withoutMiddleware(['auth', 'authorized']);
+        Route::post('/check-email', [RegisterController::class, 'checkEmailAvailability'])->withoutMiddleware(['auth', 'authorized']);
+        Route::post('/register', [RegisterController::class, 'register'])->withoutMiddleware(['auth', 'authorized']);
+        Route::group(['prefix'=>'/profile'], function(){
+            Route::post('/', [UserController::class, 'getProfile']);
+            Route::group(['prefix'=>'/profile'], function(){
+                Route::post('/', [UserController::class, 'updateProfile']);
+                Route::post('/uploadFoto', [UserController::class, 'uploadFoto'])->withoutMiddleware(['auth', 'authorized']);
+                Route::put('/password', [UserController::class, 'updatePassword']);
+            });
+            Route::post('/foto', [UserController::class, 'checkFotoProfile']);
+        });
+        Route::post('/logout', [UserController::class, 'logout']);
+    });
+    Route::post('/handshake', [RSAController::class, 'handshake_rsa']);
+    Route::post('/footer-mail', [MailController::class, 'sendMailFooter']);
+    Route::post('/', [HomeController::class, 'showHome']);
+    Route::post('/about', [HomeController::class, 'showAbout']);
+    Route::post('/events', [HomeController::class, 'showEvents']);
+    Route::post('/search', [EventController::class, 'searchEvent']);
+    Route::post('/event-categories', [HomeController::class, 'getEventCategory']);
+    Route::post('/event/{id}', [HomeController::class, 'showEventDetail']);
+    Route::post('/booking/{id}', [HomeController::class, 'showEventDetail']);
+    Route::post('/event-booking', [EventController::class, 'bookingEvent']);
+    Route::post('/dashboard', [AdminController::class, 'showDashboard']);
+    Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);
 });
-Route::get('/', function(){
-    return view('pages.home');
+Route::fallback(function(Request $request){
+    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
 });
-Route::post('/', [HomeController::class, 'showHome']);
-Route::post('/about', [HomeController::class, 'showAbout']);
-Route::post('/events', [HomeController::class, 'showEvents']);
-Route::post('/search', [EventController::class, 'searchEvent']);
-Route::post('/event-categories', [HomeController::class, 'getEventCategory']);
-Route::post('/event/{id}', [HomeController::class, 'showEventDetail']);
-Route::post('/booking/{id}', [HomeController::class, 'showEventDetail']);
-Route::post('/event-booking', [EventController::class, 'bookingEvent']);
-Route::post('/dashboard', [AdminController::class, 'showDashboard']);
-Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);

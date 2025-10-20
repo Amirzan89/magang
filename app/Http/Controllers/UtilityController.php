@@ -7,17 +7,14 @@ use DateTime;
 class UtilityController extends Controller
 {
     public static function getView($name = null, $data = [], $cond = null){
-        $comps = function($dom) use ($data, $cond){
-            if($dom){
+        $comps = function($domain) use ($data, $cond){
+            if($domain){
                 if(is_array($cond) && is_array($cond['cond']) && in_array('view', $cond['cond'])){
-                    $indexPath = public_path('dist/index.html');
+                    $indexPath = public_path('index.html');
                     if(!File::exists($indexPath)) {
                         return response()->json(['error' => 'Page not found'], 404);
                     }
-                    $htmlContent = File::get($indexPath);
-                    $htmlContent = str_replace('<body>', '<body>' . '<script>const csrfToken = "' . csrf_token() . '";</script>', $htmlContent);
-                    $htmlContent = str_replace('</head>', '<script>window.__INITIAL_COSTUM_STATE__ = ' . json_encode($data) . '</script></head>', $htmlContent);
-                    return response($htmlContent)->cookie('XSRF-TOKEN', csrf_token(), 0, '/', null, false, true);
+                    return response(File::get($indexPath));
                 }
             }else{
                 if(is_array($cond) && array_key_exists('redirect', $cond)){

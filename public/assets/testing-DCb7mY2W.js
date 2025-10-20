@@ -1,0 +1,1 @@
+import{d as t,u as a,c as n,o}from"./index-Xum_CI5g.js";const l=t({__name:"testing",setup(c){const e=a();function s(){e.add({severity:"success",summary:"Sukses",detail:"Operasi berhasil dilakukan",life:3e3})}return(r,i)=>(o(),n("button",{class:"bg-red-500",onClick:s},"piteken"))}});export{l as default};

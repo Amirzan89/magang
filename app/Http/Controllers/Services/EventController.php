@@ -288,10 +288,16 @@ class EventController extends Controller
                     return $categoryData;
                 }
                 $categoryData = $categoryData['data'];
-                $result = collect($jsonData)->groupBy('eventgroup')->map(fn($items, $key) => [
-                    'event_group_name' => collect($categoryData)->firstWhere('event_group', $key)['event_group_name'] ?? $key,
-                    'total_event' => $items->count(),
-                ])->values()->toArray();
+                $result = collect($jsonData)->groupBy('eventgroup')->map(function ($items, $key) use ($categoryData){
+                    $match = collect($categoryData)->firstWhere('event_group', $key);
+                    if(!$match){
+                        return null;
+                    }
+                    return [
+                        'event_group_name' => $match['event_group_name'],
+                        'total_event' => $items->count(),
+                    ];
+                })->filter()->values()->toArray();
                 return ['status' => 'success', 'data' => $result];
         }
         return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle, $pagination);
@@ -344,7 +350,7 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $searchData = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'nama_lokasi', 'link_lokasi', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'nama_lokasi', 'link_lokasi', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false, ['next_page' => $request->query('next_page'), 'limit' => $request->query('limit') ? $request->query('limit') : 5, 'column_id' => 'eventid', 'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time']);
+        $searchData = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false, ['next_page' => $request->query('next_page'), 'limit' => $request->query('limit') ? $request->query('limit') : 5, 'column_id' => 'eventid', 'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time']);
         if($searchData['status'] === 'error'){
             $codeRes = $searchData['statusCode'];
             unset($searchData['statusCode']);
