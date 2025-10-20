@@ -4,10 +4,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\UtilityController;
 use App\Http\Controllers\Security\AESController;
 use App\Mail\EventBookingMail;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use Throwable;
+use Error;
 class EventController extends Controller
 {
     private static $jsonFileEvent;
@@ -393,44 +396,67 @@ class EventController extends Controller
             $counter = isset($jsonData['counter']) ? intval($jsonData['counter']) + 1 : 1;
         }
         file_put_contents($counterFile, json_encode(['counter' => str_pad($counter, 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
-        $keyPyxis = env('PYXIS_KEY1');
-        $ivPyxis = env('PYXIS_IV');
-        $reqDec = [
-            "userid" => "demo@demo.com",
-            "groupid" => "XCYTUA",
-            "businessid" => "PJLBBS",
-            "sql" => sprintf(
-                "INSERT INTO event_registration (keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount, paymentdate, notes) VALUES ('I5RLGI', '5EA9I2', '%s', '%s', 'O', '%s', '%s', '%s', '%s', '%s', '%s', %d, 'C', '122335465656', '50000', '%s', 'OK')",
-                addslashes($request->input('event_group')),
-                addslashes($request->input('event_id')),
-                $registNo,
-                now()->toDateString(),
-                addslashes($request->input('nama')),
-                addslashes($request->input('email')),
-                addslashes($request->input('mobileno')),
-                addslashes($request->input('gender')),
-                (int) $request->input('qty'),
-                now()->toDateString()
-            )
-        ];
-        $bodyData = strtoupper(bin2hex(openssl_encrypt(json_encode($reqDec), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis)));
-        $bodyReq = [
-            'apikey' => env('PYXIS_KEY2'),
-            'uniqueid' => $ivPyxis,
-            'timestamp' => now()->format('YmdHis'),
-            'message' => $bodyData,
-        ];
-        $res = Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL') . '/JNonQuery', $bodyReq);
-        $responseJson = json_decode($res->body(), true);
-        $decServer = json_decode(openssl_decrypt(hex2bin($responseJson['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
-        if(isset($decServer['status']) && $decServer['status'] === 'error'){
-            return response()->json(['status' => 'error', 'message' => $decServer['message']], 500);
+        try{
+            $keyPyxis = env('PYXIS_KEY1');
+            $ivPyxis = env('PYXIS_IV');
+            $reqDec = [
+                "userid" => "demo@demo.com",
+                "groupid" => "XCYTUA",
+                "businessid" => "PJLBBS",
+                "sql" => sprintf(
+                    "INSERT INTO event_registration (keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount, paymentdate, notes) VALUES ('I5RLGI', '5EA9I2', '%s', '%s', 'O', '%s', '%s', '%s', '%s', '%s', '%s', %d, 'C', '122335465656', '50000', '%s', 'OK')",
+                    addslashes($request->input('event_group')),
+                    addslashes($request->input('event_id')),
+                    $registNo,
+                    now()->toDateString(),
+                    addslashes($request->input('nama')),
+                    addslashes($request->input('email')),
+                    addslashes($request->input('mobileno')),
+                    addslashes($request->input('gender')),
+                    (int) $request->input('qty'),
+                    now()->toDateString()
+                )
+            ];
+            $bodyData = strtoupper(bin2hex(openssl_encrypt(json_encode($reqDec), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis)));
+            $bodyReq = [
+                'apikey' => env('PYXIS_KEY2'),
+                'uniqueid' => $ivPyxis,
+                'timestamp' => now()->format('YmdHis'),
+                'message' => $bodyData,
+            ];
+            $res = Http::withHeaders(['Content-Type' => 'application/json'])->post(env('PYXIS_URL') . '/JNonQuery', $bodyReq);
+            $responseJson = json_decode($res->body(), true);
+            $decServer = json_decode(openssl_decrypt(hex2bin($responseJson['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
+            if(isset($decServer['status']) && $decServer['status'] === 'error'){
+                return response()->json(['status' => 'error', 'message' => $decServer['message']], 500);
+            }
+            // Mail::to($request->input('email'))->send(new EventBookingMail([
+            //     'email' => $request->input('email'),
+            //     'name' => $request->input('nama'),
+            //     'event_id' => $request->input('event_id')
+            // ]));
+            return response()->json(['status' => 'success', 'message' => app()->make(AESController::class)->encryptResponse(['message' => 'Booking Event telah berhasil'], $request->input('key'), $request->input('iv'))]);
+        }catch(RequestException $e){
+            file_put_contents($counterFile, json_encode(['counter' => str_pad(intval($jsonData['counter']), 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
+            return response()->json([
+                'error' => 'An error occurred with the external service.',
+                'message' => 'Gagal booking event silahkan kirim ulang',
+                'status' => 'error'
+            ], $e->response->status());
+        }catch(Throwable $e){
+            file_put_contents($counterFile, json_encode(['counter' => str_pad(intval($jsonData['counter']), 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
+            return response()->json([
+                'error' => 'An error occurred with the external service.',
+                'message' => 'Gagal booking event silahkan kirim ulang',
+                'status' => 'error'
+            ], 500);
+        }catch(Error $e){
+            file_put_contents($counterFile, json_encode(['counter' => str_pad(intval($jsonData['counter']), 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
+            return response()->json([
+                'error' => 'An unexpected server error occurred.',
+                'message' => 'Gagal booking event silahkan kirim ulang',
+                'status' => 'error'
+            ], 500);
         }
-        // Mail::to($request->input('email'))->send(new EventBookingMail([
-        //     'email' => $request->input('email'),
-        //     'name' => $request->input('nama'),
-        //     'event_id' => $request->input('event_id')
-        // ]));
-        return response()->json(['status' => 'success', 'message' => app()->make(AESController::class)->encryptResponse(['message' => 'Booking Event telah berhasil'], $request->input('key'), $request->input('iv'))]);
     }
 }
