@@ -11,12 +11,37 @@ class AESController extends Controller
 {
     public function mersealToken(Request $request){
         $merseal = $request->header('X-Merseal') ?? $request->input('merseal');
+        $ivHex = $request->header('X-UniqueId') ?? $request->input('uniqueid');
         if(!$merseal){
             return ['status'=>'error','message'=>'missing merseal token','statusCode'=>401];
         }
-        $sePayload = json_decode(Crypt::decryptString($merseal), true);
+        if(!$ivHex){
+            return ['status'=>'error','message'=>'missing iv token','statusCode'=>401];
+        }
+        try{
+            $sePayload = json_decode(Crypt::decryptString($merseal), true);
+        }catch(\Exception $e){
+            return [
+                'status' => 'error',
+                'message' => 'invalid or forged merseal token',
+                'statusCode' => 400,
+            ];
+        }
+        $required = ['k', 'm', 'exp', 'jti'];
+        foreach($required as $field){
+            if(!isset($sePayload[$field])){
+                return [
+                    'status' => 'error',
+                    'message' => "malformed merseal token: missing field {$field}",
+                    'statusCode' => 400,
+                ];
+            }
+        }
         if(($sePayload['exp'] ?? 0) < time()){
             return ['status'=>'error','message'=>'merseal expired','statusCode'=>401];
+        }
+        if($request->isMethod('get')){
+            return ['status'=>'success','data'=>['key' => $sePayload['k'], 'iv' => $ivHex]];
         }
         $hmac = hex2bin($sePayload['m']);
         $ivHex = $request->input('uniqueid');

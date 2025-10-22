@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Controllers\Security;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\AdminController;
 use App\Models\Admin;
 use App\Models\RefreshToken;
 use App\Models\User;
@@ -184,7 +184,7 @@ class JWTController extends Controller
             if(!(strcmp($data['email'],$decoded['data']['email'] ?? null) === 0)){
                 return ['status'=>'error','message'=>'invalid email'];
             }
-            $authData = UserController::checkEmail($data['email']);
+            $authData = AdminController::checkEmail($data['email']);
             if($authData['status'] == 'error') return $authData;
             return ['status'=>'success','data'=>array_merge($authData['data'], $decoded['data'])];
         }catch(ExpiredException $e){

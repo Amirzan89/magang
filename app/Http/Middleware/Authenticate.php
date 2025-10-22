@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Middleware;
 use App\Http\Controllers\Security\JWTController;
+use App\Http\Controllers\Security\AESController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cookie;
@@ -8,14 +9,15 @@ use App\Models\User;
 use Closure;
 class Authenticate
 {
-    private function handleRedirect($request, $cond, $link = '/login'){
+    private function handleRedirect($request, $aesController, $cond, $link = '/login'){
         if($cond == 'error'){
-            return $request->wantsJson() ? response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401)->withCookie(Cookie::forget('token1'))->withCookie(Cookie::forget('token2'))->withCookie(Cookie::forget('token3')) : redirect('/login')->withCookies([Cookie::forget('token1'),Cookie::forget('token2'),Cookie::forget('token3')]);
+            return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' => $aesController->encryptResponse(['message'=>'Unauthorized'], $request->input('key'), $request->input('iv'))], 401)->withCookie(Cookie::forget('token1'))->withCookie(Cookie::forget('token2'))->withCookie(Cookie::forget('token3')) : redirect('/login')->withCookies([Cookie::forget('token1'),Cookie::forget('token2'),Cookie::forget('token3')]);
         }
-        return $request->wantsJson() ? response()->json(['status' => 'error', 'message' => 'redirect', 'link' => $link], 302) : redirect($link);
+        return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' => $aesController->encryptResponse(['message'=>'redirect'], $request->input('key'), $request->input('iv')), 'link' => $link], 302) : redirect($link);
     }
     public function handle(Request $request, Closure $next){
         $jwtController = app()->make(JWTController::class);
+        $aesController = app()->make(AESController::class);
         $currentPath = $request->getPathInfo();
         $previousUrl = url()->previous();
         $path = parse_url($previousUrl, PHP_URL_PATH);
@@ -26,33 +28,36 @@ class Authenticate
             $tokenDecode1 = json_decode(base64_decode($token1),true);
             $email = $tokenDecode1['email'];
             $number = $tokenDecode1['number'];
-            $publicPage = ['/', '/login', '/register', '/password/reset', '/verify/password', '/verify/email', '/auth/redirect', '/auth/google'];
-            $prefPublic = ['/event'];
-            if((in_array($currentPath, $publicPage) || !empty(array_filter($prefPublic, fn($prefix) => strpos($currentPath, $prefix) === 0))) && $request->isMethod('get')){
+            $publicPage = ['/', '/about', '/events', '/login', '/password/reset', '/verify/password', '/verify/email', '/auth/redirect', '/auth/google'];
+            $prefPublic = ['/event/'];
+            $isPublicPath = function($path) use ($publicPage, $prefPublic){
+                return in_array($path, $publicPage) || !empty(array_filter($prefPublic, fn($prefix) => str_starts_with($path, $prefix)));
+            };
+            if($request->header('X-Auth-Check') || $isPublicPath($currentPath) || $isPublicPath('/api' . $currentPath)){
                 if(in_array(ltrim($path), $publicPage)){
-                    $response = $this->handleRedirect($request, 'success', '/dashboard');
+                    $response = $this->handleRedirect($request, $aesController, 'success', '/dashboard');
                 }else{
                     $prefixes = ['/admin/download'];
                     $response = null;
                     foreach ($prefixes as $prefix) {
-                        if ($prefix !== '' && strpos($path, $prefix) === 0) {
-                            $response = $this->handleRedirect($request, 'success', '/dashboard');
+                        if($prefix !== '' && strpos($path, $prefix) === 0){
+                            $response = $this->handleRedirect($request, $aesController, 'success', '/dashboard');
                         }
                     }
-                    if (is_null($response) && $request->isMethod('get') && !in_array($path, ['/download'])) {
-                        $response = $this->handleRedirect($request, 'success', $path ?? '/dashboard');
+                    if(is_null($response) && $request->isMethod('get') && !in_array($path, ['/download'])){
+                        $response = $this->handleRedirect($request, $aesController, 'success', $path ?? '/dashboard');///returnn
                     }
                 }
                 $cookies = $response->headers->getCookies();
-                foreach ($cookies as $cookie) {
-                    if ($cookie->getName() === 'token1') {
+                foreach($cookies as $cookie){
+                    if($cookie->getName() === 'token1'){////
                         $expiryTime = $cookie->getExpiresTime();
                         $currentTime = time();
-                        if ($expiryTime && $expiryTime < $currentTime) {
+                        if($expiryTime && $expiryTime < $currentTime){
                             $response->withCookie(Cookie::forget('token1'));
-                            $response->withCookie(Cookie::forget('token2'));
+                            $response->withCookie(Cookie::forget('token2'));////
                         }
-                    } else if ($cookie->getName() === 'token3') {
+                    }else if($cookie->getName() === 'token3'){
                         $expiryTime = $cookie->getExpiresTime();
                         $currentTime = time();
                         if ($expiryTime && $expiryTime < $currentTime) {
@@ -74,26 +79,26 @@ class Authenticate
             ];
             //check user is exist in database
             if(!User::select('email')->whereRaw("BINARY email = ?",[$email])->limit(1)->exists()){
-                return $this->handleRedirect($request, 'error');
+                return $this->handleRedirect($request, $aesController, 'error');
             }
             //check token if exist in database
             if(!$jwtController->checkExistRefreshToken($token3, 'website')){
                 //if token is not exist in database
                 $delete = $jwtController->deleteRefreshToken($email,$number, 'website');
                 if($delete['status'] == 'error'){
-                    return $this->handleRedirect($request, 'error');
+                    return $this->handleRedirect($request, $aesController, 'error');
                 }
-                return $this->handleRedirect($request, 'error');
+                return $this->handleRedirect($request, $aesController, 'error');
             }
             //if token exist
             $decodedRefresh = $jwtController->decode($decodeRefresh);
             if($decodedRefresh['status'] == 'error'){
                 if($decodedRefresh['message'] == 'Expired token'){
-                    return $this->handleRedirect($request, 'error');
+                    return $this->handleRedirect($request, $aesController, 'error');
                 }else if($decodedRefresh['message'] == 'invalid email'){
-                    return $this->handleRedirect($request, 'error');
+                    return $this->handleRedirect($request, $aesController, 'error');
                 }
-                return $this->handleRedirect($request, 'error');
+                return $this->handleRedirect($request, $aesController, 'error');
             }
             //if token refresh success decoded and not expired
             $decoded = $jwtController->decode($decode);
@@ -135,7 +140,6 @@ class Authenticate
             $userAuth['number'] = $decoded['data']['number'];
             unset($decoded);
             $request->merge(['user_auth' => $userAuth]);
-            echo json_encode($request->all());
             return $next($request);
             //when error using this
             // $userAuth = $decoded['data'];
@@ -147,19 +151,23 @@ class Authenticate
             //if cookie gone
             $page = ['/dashboard', '/profil', '/admin', '/admin/tambah', '/rekap', '/rekap/tambah'];
             $pagePrefix = ['/admin', '/rekap'];
-            if(Str::startsWith($currentPath, $pagePrefix) || in_array($currentPath,$page)){
-                if($request->hasCookie("token1")){
-                    $token1 = json_decode(base64_decode($request->cookie('token1')),true);
-                    $email = $token1['email'];
-                    $number = $token1['number'];
-                    $delete = $jwtController->deleteRefreshToken($email,$number, 'website');
-                    if($delete['status'] == 'error'){
-                        return response()->json(['status'=>'error','message'=>'delete token error'],500);
+            if($request->header('X-Auth-Check')){
+                if(Str::startsWith($currentPath, $pagePrefix) || in_array($currentPath,$page)){
+                    if($request->hasCookie("token1")){
+                        $token1 = json_decode(base64_decode($request->cookie('token1')),true);
+                        $email = $token1['email'];
+                        $number = $token1['number'];
+                        $delete = $jwtController->deleteRefreshToken($email,$number, 'website');
+                        if($delete['status'] == 'error'){
+                            return response()->json(['status'=>'error','message'=>'delete token error'],500);
+                        }else{
+                            return $this->handleRedirect($request, $aesController, 'error');
+                        }
                     }else{
-                        return $this->handleRedirect($request, 'error');
+                        return $this->handleRedirect($request, $aesController, 'error');
                     }
                 }else{
-                    return $this->handleRedirect($request, 'error');
+                    return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'success'], $request->input('key'), $request->input('iv'))]);
                 }
             }
             return $next($request);

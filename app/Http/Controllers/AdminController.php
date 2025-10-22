@@ -9,6 +9,13 @@ use App\Models\User;
 use App\Models\Admin;
 class AdminController extends Controller
 {
+    public static function checkEmail($email){
+        $userDB = User::select('id_user', 'role')->whereRaw("BINARY email = ?", [$email])->limit(1)->get();
+            if ($userDB->isEmpty()) {
+                return ['status'=>'error','message'=>'User not found','code'=>404];
+            }
+            return ['status'=>'success','data' =>json_decode($userDB, true)[0]];
+    }
     public function createAdmin(Request $rt){
         $validator = Validator::make($rt->only('email', 'nama_admin', 'role', 'password'), [
             'email'=>'required|email',
