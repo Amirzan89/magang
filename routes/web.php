@@ -90,7 +90,7 @@ Route::get('/test/ping-session', [TestingSessionController::class, 'tes_ping']);
 Route::post('/test/session', [TestingSessionController::class, 'tesss']);
 
 
-// Route::group(['middleware'=>['auth']], function(){
+Route::group(['middleware'=>['auth']], function(){
     Route::get('/', function(Request $request){
         return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
@@ -170,7 +170,7 @@ Route::post('/test/session', [TestingSessionController::class, 'tesss']);
         Route::post('/dashboard', [AdminController::class, 'showDashboard']);
         Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);
     });
-// });
+});
 Route::fallback(function(Request $request){
     return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
 });

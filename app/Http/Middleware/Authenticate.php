@@ -50,17 +50,17 @@ class Authenticate
                 }
                 $cookies = $response->headers->getCookies();
                 foreach($cookies as $cookie){
-                    if($cookie->getName() === 'token1'){////
+                    if($cookie->getName() === 'token1'){
                         $expiryTime = $cookie->getExpiresTime();
                         $currentTime = time();
                         if($expiryTime && $expiryTime < $currentTime){
                             $response->withCookie(Cookie::forget('token1'));
-                            $response->withCookie(Cookie::forget('token2'));////
+                            $response->withCookie(Cookie::forget('token2'));
                         }
                     }else if($cookie->getName() === 'token3'){
                         $expiryTime = $cookie->getExpiresTime();
                         $currentTime = time();
-                        if ($expiryTime && $expiryTime < $currentTime) {
+                        if($expiryTime && $expiryTime < $currentTime){
                             $response->withCookie(Cookie::forget('token3'));
                         }
                     }
@@ -106,7 +106,7 @@ class Authenticate
                 if($decoded['message'] == 'Expired token'){
                     $updated = $jwtController->updateTokenWebsite($decodedRefresh['data']);
                     if($updated['status'] == 'error'){
-                        return response()->json(['status'=>'error','message'=>'update token error'],500);
+                        return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'update token error'], $request->input('key'), $request->input('iv'))], 500);
                     }
                     //when working using this
                     $userAuth = $decodedRefresh['data'];
@@ -132,7 +132,7 @@ class Authenticate
                     // $request->merge(['user_auth'=>$userAuth]);
                     // return $next($request);
                 }
-                return response()->json(['status'=>'error','message'=>$decoded['message']],500);
+                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$decoded['message']], $request->input('key'), $request->input('iv'))], 500);
             }
             //if success decode
             //when working using this
@@ -159,7 +159,7 @@ class Authenticate
                         $number = $token1['number'];
                         $delete = $jwtController->deleteRefreshToken($email,$number, 'website');
                         if($delete['status'] == 'error'){
-                            return response()->json(['status'=>'error','message'=>'delete token error'],500);
+                            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'delete token error'], $request->input('key'), $request->input('iv'))], 500);
                         }else{
                             return $this->handleRedirect($request, $aesController, 'error');
                         }

@@ -45,10 +45,10 @@ class LoginController extends Controller
             return response()->json($jwtData, 400);
         }
         $data1 = ['email'=>$email,'number'=>$jwtData['number']];
-        return response()->json(['status'=>'success', 'message' => $aesController->encryptResponse(['message'=>'login sukses silahkan masuk dashboard'], $request->input('key'), $request->input('iv'))])
-        ->cookie('token1',base64_encode(json_encode($data1)),time()+intval(env('JWT_ACCESS_TOKEN_EXPIRED')))//////
-        ->cookie('token2',$jwtData['data']['token'],time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')))/////
-        ->cookie('token3',$jwtData['data']['refresh'],time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')));//////
+        return response()->json(['status' => 'success', 'message' => $aesController->encryptResponse(['message' => 'login sukses silahkan masuk dashboard'], $request->input('key'), $request->input('iv'))])
+            ->cookie('token1', base64_encode(json_encode($data1)), intval(env('JWT_ACCESS_TOKEN_EXPIRED')), '/', null, true, true, false, 'Strict')
+            ->cookie('token2', $jwtData['data']['token'], intval(env('JWT_ACCESS_TOKEN_EXPIRED')), '/', null, true, true, false, 'Strict')
+            ->cookie('token3', $jwtData['data']['refresh'], intval(env('JWT_REFRESH_TOKEN_EXPIRED')), '/', null, true, true, false, 'Strict');
     }
     public function redirectToProvider(){
         return Socialite::driver('google')->redirect();

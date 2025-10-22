@@ -1,10 +1,13 @@
 <?php
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Security\JWTController;
+use App\Http\Controllers\Security\AESController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cookie;
 use App\Models\User;
 use App\Models\Admin;
 class AdminController extends Controller
@@ -228,9 +231,9 @@ class AdminController extends Controller
         }
         return response()->json(['status' => 'success', 'message' => 'Data Admin berhasil dihapus']);
     }
-    public function logout(Request $rt){
-        $rt->user()->currentAccessToken()->delete();
-        return response()->json(['status' => 'success', 'message' => 'Logout berhasil silahkan login kembali']);
+    public function logout(Request $request, JWTController $jwtController, AESController $aesController){
+        $jwtController->deleteRefreshToken($request->input('user_auth')['email'],$request->input('user_auth')['number'], 'website');
+        return response()->json(['status' => 'success', 'message' => $aesController->encryptResponse(['message'=>'Logout berhasil silahkan login kembali'], $request->input('key'), $request->input('iv'))])->withCookie(Cookie::forget('token1'))->withCookie(Cookie::forget('token2'))->withCookie(Cookie::forget('token3'));
     }
 }
 ?>
