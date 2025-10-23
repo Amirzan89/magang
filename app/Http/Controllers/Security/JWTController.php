@@ -143,10 +143,10 @@ class JWTController extends Controller
         }
     }
     //delete refresh token website 
-    public function deleteRefreshToken($idUser, $number = null){
-        $query = RefreshToken::where('id_user', $idUser);
-        if($number !== null) $query->where('number', $number);
-        $query->delete();
+    public function deleteRefreshToken($uuid, $number = null){
+        RefreshToken::whereIn('id_user', function($query) use ($uuid) {
+            $query->select('id_user')->from('users')->where('uuid', $uuid);
+        })->where('number', $number)->delete();
     }
 
     public function rotateKEYJWT(){

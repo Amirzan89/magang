@@ -64,7 +64,7 @@ class Authenticate
                 }else{
                     $prefixes = ['/admin/download'];
                     $response = null;
-                    foreach ($prefixes as $prefix) {
+                    foreach($prefixes as $prefix){
                         if($prefix !== '' && strpos($path, $prefix) === 0){
                             $response = $this->handleRedirect($request, $aesController, 'success', '/dashboard');
                         }
@@ -74,6 +74,9 @@ class Authenticate
                     }
                 }
                 return $response;
+            }
+            if(!$jwtController->checkExistRefreshToken($token2['value'])){
+                return $this->handleRedirect($request, $aesController, 'error');
             }
             $decodedRefresh = $jwtController->decode($request, $utilityController, $token2['value'], 'JWT_SECRET_REFRESH_TOKEN');
             if($decodedRefresh['status'] == 'error'){
@@ -88,15 +91,7 @@ class Authenticate
                 return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'User Not Found'], $request->input('key'), $request->input('iv'))], 404);
             }
             $userDb = json_decode($userDb, true);
-            //check token if exist in database
-            if(!$jwtController->checkExistRefreshToken($token2['value'])){
-                $delete = $jwtController->deleteRefreshToken($decodedRefresh['data']['user'],$token2['number']);
-                if($delete['status'] == 'error'){
-                    return $this->handleRedirect($request, $aesController, 'error');
-                }
-                return $this->handleRedirect($request, $aesController, 'error');
-            }
-            $upToken1 = function() use($request, $jwtController, $aesController, $decodedRefresh, $userDb, $next){
+            $upToken1 = function() use ($request, $jwtController, $aesController, $decodedRefresh, $userDb, $next){
                 $updated = $jwtController->updateTokenWebsite($decodedRefresh['data']);
                 if($updated['status'] == 'error'){
                     return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'update token error'], $request->input('key'), $request->input('iv'))], 500);
@@ -127,7 +122,7 @@ class Authenticate
             }
             $request->merge(['user_auth' => [...$userDb, 'number' => $decoded['data']['number']]]);
             if($currentPath == '/check-auth'){
-                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'success auth'], $request->input('key'), $request->input('iv'))]);
+                return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'success auth'], $request->input('key'), $request->input('iv'))]);
             }
             return $next($request);
         }else{
@@ -148,12 +143,8 @@ class Authenticate
                     if($decoded['status'] == 'error'){
                         return $this->handleRedirect($request, $aesController, 'error');
                     }
-                    $delete = $jwtController->deleteRefreshToken($decoded['data']['user'],$decoded['data']['number']);
-                    if($delete['status'] == 'error'){
-                        return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'delete token error'], $request->input('key'), $request->input('iv'))], 500);
-                    }else{
-                        return $this->handleRedirect($request, $aesController, 'error');
-                    }
+                    $jwtController->deleteRefreshToken($decoded['data']['user'],$decoded['data']['number']);
+                    return $this->handleRedirect($request, $aesController, 'error');
                 }else{
                     return $this->handleRedirect($request, $aesController, 'error');
                 }
