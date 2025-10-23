@@ -23,9 +23,9 @@ class Authenticate
         if($cond == 'error'){
             setcookie('token1', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
             setcookie('token2', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
-            return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' => $aesController->encryptResponse(['message'=>'Unauthorized'], $request->input('key'), $request->input('iv'))], 401) : redirect('/login');
+            return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Unauthorized'], $request->input('key'), $request->input('iv'))], 401) : redirect('/login');
         }
-        return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' =>'redirect'], 302) : redirect($link);
+        return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'redirect'], $request->input('key'), $request->input('iv'))], 302) : redirect($link);
     }
     public function handle(Request $request, Closure $next){
         $jwtController = app()->make(JWTController::class);
@@ -58,7 +58,7 @@ class Authenticate
             }
             $publicPage = ['/', '/about', '/events', '/login', '/password/reset', '/verify/password', '/verify/email', '/auth/redirect', '/auth/google'];
             $prefPublic = ['/event/'];
-            if($request->header('X-Auth-Check') || $isPath($currentPath, $publicPage, $prefPublic) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $publicPage), array_map(fn($path) => '/api' . $path, $prefPublic))){
+            if($isPath($currentPath, $publicPage, $prefPublic) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $publicPage), array_map(fn($path) => '/api' . $path, $prefPublic))){
                 if(in_array(ltrim($path), $publicPage)){
                     $response = $this->handleRedirect($request, $aesController, 'success', '/dashboard');
                 }else{
@@ -78,7 +78,6 @@ class Authenticate
             $decodedRefresh = $jwtController->decode($request, $utilityController, $token2['value'], 'JWT_SECRET_REFRESH_TOKEN');
             if($decodedRefresh['status'] == 'error'){
                 if($decodedRefresh['message'] == 'Expired token'){
-                    echo "expiredd refresh";
                     return $this->handleRedirect($request, $aesController, 'error');
                 }
                 return $this->handleRedirect($request, $aesController, 'error');
@@ -127,12 +126,15 @@ class Authenticate
                 return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$decoded['message']], $request->input('key'), $request->input('iv'))], 500);
             }
             $request->merge(['user_auth' => [...$userDb, 'number' => $decoded['data']['number']]]);
+            if($currentPath == '/check-auth'){
+                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'success auth'], $request->input('key'), $request->input('iv'))]);
+            }
             return $next($request);
         }else{
             //if cookie gone
             $authPage = ['/dashboard', '/profil', '/event-booked'];
             $prefAuth = ['/admin/', '/event/'];
-            if($request->header('X-Auth-Check') || $isPath($currentPath, $authPage, $prefAuth) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $authPage), array_map(fn($path) => '/api' . $path, $prefAuth))){
+            if($isPath($currentPath, $authPage, $prefAuth) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $authPage), array_map(fn($path) => '/api' . $path, $prefAuth))){
                 if(isset($_COOKIE['token1'])){
                     $token1 = json_decode($_COOKIE['token1'], true);
                     if(!isset($token1['value']) && !isset($token1['exp'])){
@@ -155,6 +157,9 @@ class Authenticate
                 }else{
                     return $this->handleRedirect($request, $aesController, 'error');
                 }
+            }
+            if($currentPath == '/check-auth'){
+                return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'success public'], $request->input('key'), $request->input('iv'))]);
             }
             return $next($request);
         }

@@ -144,7 +144,7 @@ class JWTController extends Controller
     }
     //delete refresh token website 
     public function deleteRefreshToken($idUser, $number = null){
-        $query = RefreshToken::where('uuid', $idUser);
+        $query = RefreshToken::where('id_user', $idUser);
         if($number !== null) $query->where('number', $number);
         $query->delete();
     }

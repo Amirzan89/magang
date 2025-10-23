@@ -121,6 +121,7 @@ Route::group(['middleware'=>['auth']], function(){
     Route::get('/event-booked', function(Request $request){
         return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
+    Route::middleware('auth')->get('/check-auth', fn() => response()->noContent());
 
     Route::group(['prefix'=>'/api'], function(){
         Route::group(['prefix'=>'/verify'], function(){
