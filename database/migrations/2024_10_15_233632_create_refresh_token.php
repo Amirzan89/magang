@@ -8,7 +8,6 @@ return new class extends Migration
     {
         Schema::create('refresh_token', function (Blueprint $table) {
             $table->id('id_token');
-            $table->string('email',45);
             $table->longText('token');
             $table->unsignedSmallInteger('number');
             $table->timestamps();

@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\File;
+use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
 use DateTime;
 class UtilityController extends Controller
@@ -101,5 +102,22 @@ class UtilityController extends Controller
             $inpDate = $processedData;
         }
         return $inpDate;
+    }
+    public static function compactUuid(string $uuid): string {
+        return str_replace('-', '', $uuid);
+    }
+    public static function uuidNormalize($uuidCompact){
+        if(strlen($uuidCompact) === 32){
+            $result = substr($uuidCompact, 0, 8) . '-' .
+                substr($uuidCompact, 8, 4) . '-' .
+                substr($uuidCompact, 12, 4) . '-' .
+                substr($uuidCompact, 16, 4) . '-' .
+                substr($uuidCompact, 20);
+            if(!Uuid::isValid($result)){
+                return ['status' => 'error', 'message' => 'Invalid uuid'];
+            }
+            return ['status' => 'success', 'data' => $result];
+        }
+        return ['status' => 'error', 'message' => 'Invalid uuid'];
     }
 }

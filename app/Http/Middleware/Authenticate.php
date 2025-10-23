@@ -2,38 +2,63 @@
 namespace App\Http\Middleware;
 use App\Http\Controllers\Security\JWTController;
 use App\Http\Controllers\Security\AESController;
+use App\Http\Controllers\UtilityController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Cookie;
 use App\Models\User;
 use Closure;
 class Authenticate
 {
+    private static $metaDelCookie;
+    public function __construct(){
+        self::$metaDelCookie = [
+            'path'     => '/',
+            'domain'   => null,
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Strict'
+        ];
+    }
     private function handleRedirect($request, $aesController, $cond, $link = '/login'){
         if($cond == 'error'){
-            return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' => $aesController->encryptResponse(['message'=>'Unauthorized'], $request->input('key'), $request->input('iv'))], 401)->withCookie(Cookie::forget('token1'))->withCookie(Cookie::forget('token2'))->withCookie(Cookie::forget('token3')) : redirect('/login')->withCookies([Cookie::forget('token1'),Cookie::forget('token2'),Cookie::forget('token3')]);
+            setcookie('token1', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
+            setcookie('token2', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
+            return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' => $aesController->encryptResponse(['message'=>'Unauthorized'], $request->input('key'), $request->input('iv'))], 401) : redirect('/login');
         }
-        return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' => $aesController->encryptResponse(['message'=>'redirect'], $request->input('key'), $request->input('iv')), 'link' => $link], 302) : redirect($link);
+        return !$request->isMethod('get') || $request->wantsJson() ? response()->json(['status' => 'error', 'message' =>'redirect'], 302) : redirect($link);
     }
     public function handle(Request $request, Closure $next){
         $jwtController = app()->make(JWTController::class);
         $aesController = app()->make(AESController::class);
+        $utilityController = app()->make(UtilityController::class);
         $currentPath = $request->getPathInfo();
         $previousUrl = url()->previous();
         $path = parse_url($previousUrl, PHP_URL_PATH);
-        if($request->hasCookie("token1") && $request->hasCookie("token2") && $request->hasCookie("token3")){
-            $token1 = $request->cookie('token1');
-            $token2 = $request->cookie('token2');
-            $token3 = $request->cookie('token3');
-            $tokenDecode1 = json_decode(base64_decode($token1),true);
-            $email = $tokenDecode1['email'];
-            $number = $tokenDecode1['number'];
+        $isPath = function($path, $inPage, $inPrefAuth){
+            return in_array($path, $inPage) || !empty(array_filter($inPrefAuth, fn($prefix) => str_starts_with($path, $prefix)));
+        };
+        $delCookie = function($inpToken, $name){
+            $expiryTime = null;
+            $currentTime = time();
+            $expiryTime = intval($inpToken['exp']);
+            if($expiryTime && $expiryTime < $currentTime){
+                setcookie($name, '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
+                return ['status'=>'error'];
+            }
+            return ['status'=>'success'];
+        };
+        if(isset($_COOKIE['token2'])){
+            $token2 = json_decode($_COOKIE['token2'], true);
+            if(!isset($token2['value']) && !isset($token2['exp'])){
+                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Invalid Token'], $request->input('key'), $request->input('iv'))], 500);
+            }
+            $delToken2 = $delCookie($token2, 'token2');
+            if($delToken2['status'] == 'error'){
+                return $this->handleRedirect($request, $aesController, 'error');
+            }
             $publicPage = ['/', '/about', '/events', '/login', '/password/reset', '/verify/password', '/verify/email', '/auth/redirect', '/auth/google'];
             $prefPublic = ['/event/'];
-            $isPublicPath = function($path) use ($publicPage, $prefPublic){
-                return in_array($path, $publicPage) || !empty(array_filter($prefPublic, fn($prefix) => str_starts_with($path, $prefix)));
-            };
-            if($request->header('X-Auth-Check') || $isPublicPath($currentPath) || $isPublicPath('/api' . $currentPath)){
+            if($request->header('X-Auth-Check') || $isPath($currentPath, $publicPage, $prefPublic) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $publicPage), array_map(fn($path) => '/api' . $path, $prefPublic))){
                 if(in_array(ltrim($path), $publicPage)){
                     $response = $this->handleRedirect($request, $aesController, 'success', '/dashboard');
                 }else{
@@ -45,129 +70,90 @@ class Authenticate
                         }
                     }
                     if(is_null($response) && $request->isMethod('get') && !in_array($path, ['/download'])){
-                        $response = $this->handleRedirect($request, $aesController, 'success', $path ?? '/dashboard');///returnn
-                    }
-                }
-                $cookies = $response->headers->getCookies();
-                foreach($cookies as $cookie){
-                    if($cookie->getName() === 'token1'){
-                        $expiryTime = $cookie->getExpiresTime();
-                        $currentTime = time();
-                        if($expiryTime && $expiryTime < $currentTime){
-                            $response->withCookie(Cookie::forget('token1'));
-                            $response->withCookie(Cookie::forget('token2'));
-                        }
-                    }else if($cookie->getName() === 'token3'){
-                        $expiryTime = $cookie->getExpiresTime();
-                        $currentTime = time();
-                        if($expiryTime && $expiryTime < $currentTime){
-                            $response->withCookie(Cookie::forget('token3'));
-                        }
+                        $response = $this->handleRedirect($request, $aesController, 'success', $path ?? '/dashboard');
                     }
                 }
                 return $response;
             }
-            $decode = [
-                'email'=>$email,
-                'token'=>$token2,
-                'opt'=>'token'
-            ];
-            $decodeRefresh = [
-                'email'=>$email,
-                'token'=>$token3,
-                'opt'=>'refresh'
-            ];
-            //check user is exist in database
-            if(!User::select('email')->whereRaw("BINARY email = ?",[$email])->limit(1)->exists()){
+            $decodedRefresh = $jwtController->decode($request, $utilityController, $token2['value'], 'JWT_SECRET_REFRESH_TOKEN');
+            if($decodedRefresh['status'] == 'error'){
+                if($decodedRefresh['message'] == 'Expired token'){
+                    echo "expiredd refresh";
+                    return $this->handleRedirect($request, $aesController, 'error');
+                }
                 return $this->handleRedirect($request, $aesController, 'error');
             }
+            // //check user is exist in database
+            $userDb = User::select('id_user', 'role', 'email', 'foto')->where('uuid', $decodedRefresh['data']['user'])->first();
+            if(is_null($userDb)){
+                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'User Not Found'], $request->input('key'), $request->input('iv'))], 404);
+            }
+            $userDb = json_decode($userDb, true);
             //check token if exist in database
-            if(!$jwtController->checkExistRefreshToken($token3, 'website')){
-                //if token is not exist in database
-                $delete = $jwtController->deleteRefreshToken($email,$number, 'website');
+            if(!$jwtController->checkExistRefreshToken($token2['value'])){
+                $delete = $jwtController->deleteRefreshToken($decodedRefresh['data']['user'],$token2['number']);
                 if($delete['status'] == 'error'){
                     return $this->handleRedirect($request, $aesController, 'error');
                 }
                 return $this->handleRedirect($request, $aesController, 'error');
             }
-            //if token exist
-            $decodedRefresh = $jwtController->decode($decodeRefresh);
-            if($decodedRefresh['status'] == 'error'){
-                if($decodedRefresh['message'] == 'Expired token'){
-                    return $this->handleRedirect($request, $aesController, 'error');
-                }else if($decodedRefresh['message'] == 'invalid email'){
-                    return $this->handleRedirect($request, $aesController, 'error');
+            $upToken1 = function() use($request, $jwtController, $aesController, $decodedRefresh, $userDb, $next){
+                $updated = $jwtController->updateTokenWebsite($decodedRefresh['data']);
+                if($updated['status'] == 'error'){
+                    return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'update token error'], $request->input('key'), $request->input('iv'))], 500);
                 }
+                $request->merge(['user_auth' => [...$userDb, 'number' => $updated['data']]]);
+                $response = $next($request);
+                setcookie('token1', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
+                setcookie('token1', $updated['data'], ['expires'  => time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')), ...self::$metaDelCookie]);
+                return $response;
+            };
+            if(!isset($_COOKIE['token1'])){
+                return $upToken1();
+            }
+            $token1 = json_decode($_COOKIE['token1'], true);
+            if(!isset($token1['value']) && !isset($token1['exp'])){
+                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Invalid Token'], $request->input('key'), $request->input('iv'))], 500);
+            }
+            $delToken1 = $delCookie($token1, 'token1');
+            if($delToken1['status'] == 'error'){
                 return $this->handleRedirect($request, $aesController, 'error');
             }
-            //if token refresh success decoded and not expired
-            $decoded = $jwtController->decode($decode);
+            $decoded = $jwtController->decode($request, $utilityController, $token1['value'], 'JWT_SECRET');
             if($decoded['status'] == 'error'){
                 if($decoded['message'] == 'Expired token'){
-                    $updated = $jwtController->updateTokenWebsite($decodedRefresh['data']);
-                    if($updated['status'] == 'error'){
-                        return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'update token error'], $request->input('key'), $request->input('iv'))], 500);
-                    }
-                    //when working using this
-                    $userAuth = $decodedRefresh['data'];
-                    $userAuth['number'] = $decodedRefresh['data']['number'];
-                    unset($decodedRefresh);
-                    $request->merge(['user_auth' => $userAuth]);
-                    $response = $next($request);
-                    $cookies = $response->headers->getCookies();
-                    foreach ($cookies as $cookie) {
-                        if ($cookie->getName() === 'token1') {
-                            $response->cookie('token1',$token1,$cookie->getExpiresTime());
-                        }else if ($cookie->getName() === 'token3') {
-                            $response->cookie('token3',$token3,$cookie->getExpiresTime());
-                        }
-                    }
-                    Cookie::forget('token2');
-                    $response->cookie('token2', $updated['data'], time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')));
-                    return $response;
-                    //when error using this
-                    // $userAuth = $decoded['data'];
-                    // $userAuth['number'] = $decoded['data']['number'];
-                    // unset($decoded);
-                    // $request->merge(['user_auth'=>$userAuth]);
-                    // return $next($request);
+                    return $upToken1();
                 }
                 return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$decoded['message']], $request->input('key'), $request->input('iv'))], 500);
             }
-            //if success decode
-            //when working using this
-            $userAuth = $decoded['data'];
-            $userAuth['number'] = $decoded['data']['number'];
-            unset($decoded);
-            $request->merge(['user_auth' => $userAuth]);
+            $request->merge(['user_auth' => [...$userDb, 'number' => $decoded['data']['number']]]);
             return $next($request);
-            //when error using this
-            // $userAuth = $decoded['data'];
-            // $userAuth['number'] = $decoded['data']['number'];
-            // unset($decoded);
-            // $request->merge(['user_auth'=>$userAuth]);
-            // return $next($request);
         }else{
             //if cookie gone
-            $page = ['/dashboard', '/profil', '/admin', '/admin/tambah', '/rekap', '/rekap/tambah'];
-            $pagePrefix = ['/admin', '/rekap'];
-            if($request->header('X-Auth-Check')){
-                if(Str::startsWith($currentPath, $pagePrefix) || in_array($currentPath,$page)){
-                    if($request->hasCookie("token1")){
-                        $token1 = json_decode(base64_decode($request->cookie('token1')),true);
-                        $email = $token1['email'];
-                        $number = $token1['number'];
-                        $delete = $jwtController->deleteRefreshToken($email,$number, 'website');
-                        if($delete['status'] == 'error'){
-                            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'delete token error'], $request->input('key'), $request->input('iv'))], 500);
-                        }else{
-                            return $this->handleRedirect($request, $aesController, 'error');
-                        }
+            $authPage = ['/dashboard', '/profil', '/event-booked'];
+            $prefAuth = ['/admin/', '/event/'];
+            if($request->header('X-Auth-Check') || $isPath($currentPath, $authPage, $prefAuth) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $authPage), array_map(fn($path) => '/api' . $path, $prefAuth))){
+                if(isset($_COOKIE['token1'])){
+                    $token1 = json_decode($_COOKIE['token1'], true);
+                    if(!isset($token1['value']) && !isset($token1['exp'])){
+                        return $this->handleRedirect($request, $aesController, 'error');
+                    }
+                    $delToken1 = $delCookie($token1, 'token1');
+                    if($delToken1['status'] == 'error'){
+                        return $this->handleRedirect($request, $aesController, 'error');
+                    }
+                    $decoded = $jwtController->decode($request, $utilityController, $token1['value'], 'JWT_SECRET');
+                    if($decoded['status'] == 'error'){
+                        return $this->handleRedirect($request, $aesController, 'error');
+                    }
+                    $delete = $jwtController->deleteRefreshToken($decoded['data']['user'],$decoded['data']['number']);
+                    if($delete['status'] == 'error'){
+                        return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'delete token error'], $request->input('key'), $request->input('iv'))], 500);
                     }else{
                         return $this->handleRedirect($request, $aesController, 'error');
                     }
                 }else{
-                    return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'success'], $request->input('key'), $request->input('iv'))]);
+                    return $this->handleRedirect($request, $aesController, 'error');
                 }
             }
             return $next($request);

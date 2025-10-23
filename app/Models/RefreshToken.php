@@ -12,7 +12,7 @@ class RefreshToken extends Model implements JWTSubject
     protected $keyType = 'integer';
     public $timestamps = true;
     protected $fillable = [
-        'email','token','device','number','id_user'
+        'token','device','number','id_user'
     ];
     public function getJWTIdentifier(){
         return $this->getKey();

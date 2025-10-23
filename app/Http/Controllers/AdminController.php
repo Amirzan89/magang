@@ -12,13 +12,6 @@ use App\Models\User;
 use App\Models\Admin;
 class AdminController extends Controller
 {
-    public static function checkEmail($email){
-        $userDB = User::select('id_user', 'role')->whereRaw("BINARY email = ?", [$email])->limit(1)->get();
-            if ($userDB->isEmpty()) {
-                return ['status'=>'error','message'=>'User not found','code'=>404];
-            }
-            return ['status'=>'success','data' =>json_decode($userDB, true)[0]];
-    }
     public function createAdmin(Request $rt){
         $validator = Validator::make($rt->only('email', 'nama_admin', 'role', 'password'), [
             'email'=>'required|email',
@@ -232,8 +225,19 @@ class AdminController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Data Admin berhasil dihapus']);
     }
     public function logout(Request $request, JWTController $jwtController, AESController $aesController){
-        $jwtController->deleteRefreshToken($request->input('user_auth')['email'],$request->input('user_auth')['number'], 'website');
-        return response()->json(['status' => 'success', 'message' => $aesController->encryptResponse(['message'=>'Logout berhasil silahkan login kembali'], $request->input('key'), $request->input('iv'))])->withCookie(Cookie::forget('token1'))->withCookie(Cookie::forget('token2'))->withCookie(Cookie::forget('token3'));
+        $jwtController->deleteRefreshToken($request->input('user_auth')['id_user'],$request->input('user_auth')['number']);
+        $metaCookie = [
+            'expires'  => time() - 3600,
+            'path'     => '/',
+            'domain'   => null,
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Strict'
+        ];
+        setcookie('token1', '', $metaCookie);
+        setcookie('token2', '', $metaCookie);
+        setcookie('token3', '', $metaCookie);
+        return response()->json(['status' => 'success', 'message' => $aesController->encryptResponse(['message'=>'Logout berhasil silahkan login kembali'], $request->input('key'), $request->input('iv'))]);
     }
 }
 ?>
