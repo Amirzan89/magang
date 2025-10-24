@@ -134,10 +134,7 @@ Route::group(['middleware'=>['auth']], function(){
                 Route::put('/profile', [AdminControllerServices::class, 'updateProfile']);
                 Route::put('/password', [AdminControllerServices::class, 'updatePassword']);
             });
-            Route::group(['prefix'=>'/download/foto'], function(){
-                Route::get('/','AdminController@getFotoProfile');
-                Route::get('/default','AdminController@getDefaultFoto');
-            });
+            Route::get('/download/foto-profile', [AdminControllerServices::class, 'getFotoProfile']);
             Route::post('/logout', [AdminControllerServices::class, 'logout']);
         });
     });

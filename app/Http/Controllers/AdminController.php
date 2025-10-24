@@ -11,9 +11,15 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 class AdminController extends Controller
 {
-    private static $adminRole = [];
+    private static $metaDelCookie;
     public function __construct(){
-        self::$adminRole = ['super admin', 'admin'];
+        self::$metaDelCookie = [
+            'path'     => '/',
+            'domain'   => null,
+            'secure'   => true,
+            'httponly' => true,
+            'samesite' => 'Strict'
+        ];
     }
     public function getFotoProfile(Request $request, AESController $aesController){
         $userAuth = $request->input('user_auth');
@@ -25,11 +31,11 @@ class AdminController extends Controller
             $defaultPhotoPath = 'admin/default.jpg';
             return response()->download(storage_path('app/' . $defaultPhotoPath), 'foto.' . pathinfo($defaultPhotoPath, PATHINFO_EXTENSION));
         }else{
-            $filePath = storage_path('app/admin/foto' . $userAuth['foto']);
+            $filePath = storage_path('app/admin' . $userAuth['foto']);
             if(empty($userAuth['foto'] || is_null($userAuth['foto'])) || !file_exists($filePath) || !is_file($filePath)){
                 return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Foto Profile tidak ditemukan'], $request->input('key'), $request->input('iv'))], 400);
             }
-            return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Foto Profile ditemukan','data'=>Crypt::decrypt(file_get_contents($filePath))], $request->input('key'), $request->input('iv'))]);
+            return response()->json(['status'=>'success','message'=>$aesController->encryptResponseFile(Crypt::decrypt(file_get_contents($filePath)), $request->input('key'), $request->input('iv'))]);
         }
     }
     public function updateProfile(Request $request, JWTController $jwtController, AESController $aesController){
@@ -73,17 +79,17 @@ class AdminController extends Controller
         if(!$updatedAuthProfile || !$updateProfile){
             return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Gagal memperbarui profile'], $request->input('key'), $request->input('iv'))], 500);
         }
-        $updated = $jwtController->updateJWTProfile();
-        if($updated['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'update token error'], $request->input('key'), $request->input('iv'))], 500);
-        }
-        //get exppp
-        //
-        /////
-        setcookie('token1', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
-        setcookie('token2', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
-        setcookie('token1', $updated['data']['token'], ['expires'  => time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')), ...self::$metaDelCookie]);
-        setcookie('token2', $updated['data']['refresh'], ['expires'  => time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')), ...self::$metaDelCookie]);
+        // $updated = $jwtController->updateJWTProfile();
+        // if($updated['status'] == 'error'){
+        //     return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'update token error'], $request->input('key'), $request->input('iv'))], 500);
+        // }
+        // //get exppp
+        // //
+        // /////
+        // setcookie('token1', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
+        // setcookie('token2', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
+        // setcookie('token1', $updated['data']['token'], ['expires'  => time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')), ...self::$metaDelCookie]);
+        // setcookie('token2', $updated['data']['refresh'], ['expires'  => time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')), ...self::$metaDelCookie]);
         return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Profile Anda Berhasi di perbarui'], $request->input('key'), $request->input('iv'))]);
     }
     public function updatePassword(Request $request, AESController $aesController){
