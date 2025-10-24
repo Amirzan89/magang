@@ -142,6 +142,9 @@ class JWTController extends Controller
             return ['status'=>'error','message'=>$e->getMessage()];
         }
     }
+    public function updateJWTProfile($idUser, $number){
+        //
+    }
     //delete refresh token website 
     public function deleteRefreshToken($uuid, $number = null){
         RefreshToken::whereIn('id_user', function($query) use ($uuid) {

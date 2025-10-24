@@ -32,7 +32,7 @@ class LoginController extends Controller
         $email = $request->input("email");
         // $email = "Admin@gmail.com";
         $pass = $request->input("password");
-        $pass = "Admin@1234567890";
+        // $pass = "Admin@1234567890";
         $user = User::select('id_user', 'password')->whereRaw("BINARY email = ?",[$email])->first();
         if(is_null($user)){
             return response()->json(['status' => 'error', 'message' => 'Email salah'], 400);

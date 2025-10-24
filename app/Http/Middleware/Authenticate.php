@@ -86,7 +86,7 @@ class Authenticate
                 return $this->handleRedirect($request, $aesController, 'error');
             }
             // //check user is exist in database
-            $userDb = User::select('id_user', 'role', 'email', 'foto')->where('uuid', $decodedRefresh['data']['user'])->first();
+            $userDb = User::select('id_user', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'email', 'foto')->where('uuid', $decodedRefresh['data']['user'])->first();
             if(is_null($userDb)){
                 return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'User Not Found'], $request->input('key'), $request->input('iv'))], 404);
             }

@@ -10,10 +10,8 @@ return new class extends Migration
             $table->id('id_user');
             $table->uuid('uuid');
             $table->string('nama_lengkap',50);
-            $table->enum('jenis_kelamin',['laki-laki','perempuan'])->nullable();
-            $table->string('no_telpon',15)->nullable();
-            $table->string('alamat',400)->nullable();
-            $table->enum('role',['super admin', 'admin']);
+            $table->enum('jenis_kelamin',['laki-laki','perempuan']);
+            $table->string('no_telpon',15);
             $table->string('email',45);
             $table->string('password');
             $table->string('foto',50)->nullable();

@@ -8,6 +8,14 @@ use App\Http\Controllers\Services\ThirdPartyController;
 use Illuminate\Http\Request;
 class AdminController extends Controller
 {
+    private static function getUserAuth(Request $request){
+        $userAuth = $request->input('user_auth');
+        unset($userAuth['id_user']);
+        if(!empty($userAuth['foto'])){
+            $userAuth['foto'] = 'exist';
+        }
+        return $userAuth;
+    }
     public function showDashboard(Request $request){
         $eventController = app()->make(ServiceEventController::class);
         $listEvents = $eventController->dataCacheEvent(null, null, 5, ['id', 'eventid', 'eventname', 'startdate', 'nama_lokasi', 'link_lokasi'], ['id', 'event_id', 'event_name', 'start_date', 'nama_lokasi', 'link_lokasi'], true, null, true);
@@ -32,14 +40,14 @@ class AdminController extends Controller
         }
         $event_group = $event_group['data'];
         $dataShow = [
+            'user_auth' => self::getUserAuth($request),
             'list_events' => $listEvents,
             'total_event' => $total_event,
             'event_group' => $event_group,
         ];
-        $enc = app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json_encrypt');
+        return UtilityController::getView('', app()->make(AESController::class)->encryptResponse($dataShow, $request->input('key'), $request->input('iv')), 'json_encrypt');
     }
-    public function showEventBooked(Request $request){
+    public function showEventBooked(Request $request, AESController $aesController){
         $listBooked = app()->make(ThirdPartyController::class)->pyxisAPI([
             "userid" => "demo@demo.com",
             "groupid" => "XCYTUA",
@@ -47,7 +55,13 @@ class AdminController extends Controller
             "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount,  paymentdate, notes FROM event_registration",
             "order" => ""
         ],'/JQuery');
-        $enc = app()->make(AESController::class)->encryptResponse($listBooked, $request->input('key'), $request->input('iv'));
-        return UtilityController::getView('', $enc, 'json_encrypt');
+        $dataShow = [
+            'user_auth' => self::getUserAuth($request),
+            'list_booked' => $listBooked,
+        ];
+        return UtilityController::getView('', $aesController->encryptResponse($dataShow, $request->input('key'), $request->input('iv')), 'json_encrypt');
+    }
+    public function showProfile(Request $request, AESController $aesController){
+        return UtilityController::getView('', $aesController->encryptResponse(self::getUserAuth($request), $request->input('key'), $request->input('iv')), 'json_encrypt');
     }
 }
