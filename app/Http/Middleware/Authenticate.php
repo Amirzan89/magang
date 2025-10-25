@@ -1,5 +1,7 @@
 <?php
 namespace App\Http\Middleware;
+use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Pages\AdminController as ShowAdminController;
 use App\Http\Controllers\Security\JWTController;
 use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\UtilityController;
@@ -12,9 +14,9 @@ class Authenticate
     private static $metaDelCookie;
     public function __construct(){
         self::$metaDelCookie = [
-            'path'     => '/',
-            'domain'   => null,
-            'secure'   => true,
+            'path' => '/',
+            'domain' => null,
+            'secure' => true,
             'httponly' => true,
             'samesite' => 'Strict'
         ];
@@ -30,6 +32,7 @@ class Authenticate
     public function handle(Request $request, Closure $next){
         $jwtController = app()->make(JWTController::class);
         $aesController = app()->make(AESController::class);
+        $adminController = app()->make(ShowAdminController::class);
         $utilityController = app()->make(UtilityController::class);
         $currentPath = $request->getPathInfo();
         $previousUrl = url()->previous();
@@ -122,13 +125,13 @@ class Authenticate
             }
             $request->merge(['user_auth' => [...$userDb, 'number' => $decoded['data']['number']]]);
             if($currentPath == '/check-auth'){
-                return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'success auth'], $request->input('key'), $request->input('iv'))]);
+                return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>$adminController->getUserAuth($request, app()->make(AdminController::class))], $request->input('key'), $request->input('iv'))]);
             }
             return $next($request);
         }else{
             //if cookie gone
             $authPage = ['/dashboard', '/profil', '/event-booked'];
-            $prefAuth = ['/admin/', '/event/'];
+            $prefAuth = ['/admin/'];
             if($isPath($currentPath, $authPage, $prefAuth) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $authPage), array_map(fn($path) => '/api' . $path, $prefAuth))){
                 if(isset($_COOKIE['token1'])){
                     $token1 = json_decode($_COOKIE['token1'], true);
@@ -150,7 +153,7 @@ class Authenticate
                 }
             }
             if($currentPath == '/check-auth'){
-                return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'success public'], $request->input('key'), $request->input('iv'))]);
+                return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>'success public'], $request->input('key'), $request->input('iv'))]);
             }
             return $next($request);
         }

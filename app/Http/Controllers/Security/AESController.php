@@ -65,10 +65,7 @@ class AESController extends Controller
         }
         return ['status'=>'success','data'=>json_decode($decrypt, true)];
     }
-    public function encryptResponse($data, $key, $iv){
-        return bin2hex(openssl_encrypt(json_encode($data), 'AES-256-CBC', hex2bin($key), OPENSSL_RAW_DATA, hex2bin($iv)));
-    }
-    public function encryptResponseFile($data, $key, $iv){
-        return bin2hex(openssl_encrypt($data, 'AES-256-CBC', hex2bin($key), OPENSSL_RAW_DATA, hex2bin($iv)));
+    public function encryptResponse($data, $key, $iv, $isNeedJson = true){
+        return bin2hex(openssl_encrypt($isNeedJson ? json_encode($data) : $data, 'AES-256-CBC', hex2bin($key), OPENSSL_RAW_DATA, hex2bin($iv)));
     }
 }

@@ -22,22 +22,55 @@ class AdminController extends Controller
             'samesite' => 'Strict'
         ];
     }
-    public function getFotoProfile(Request $request, AESController $aesController){
+    public static function getFotoProfile(Request $request){
         $userAuth = $request->input('user_auth');
         $referrer = $request->headers->get('referer');
         if(!$referrer && $request->path() == 'api/admin/download/foto-profile'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Invalid URL Foto Profile'], $request->input('key'), $request->input('iv'))], 400);
+            return ['status'=>'error','message'=>'Invalid URL Foto Profile','statusCode'=>400];
         }
         if(empty($userAuth['foto']) || is_null($userAuth['foto'])){
             $defaultPhotoPath = 'admin/default.jpg';
-            return response()->download(storage_path('app/' . $defaultPhotoPath), 'foto.' . pathinfo($defaultPhotoPath, PATHINFO_EXTENSION));
+            $fullPath = storage_path('app/' . $defaultPhotoPath);
+            if(!file_exists($fullPath)){
+                return ['status' => 'error', 'message' => 'Default Foto Profile tidak ditemukan', 'statusCode' => 404];
+            }
+            $fileContent = file_get_contents(storage_path('app/' . $defaultPhotoPath));
+            return [
+                'status' => 'success',
+                'data' => [
+                    'data' => base64_encode($fileContent),
+                    'meta' =>[
+                        'filename' => 'default.jpg',
+                        'size' => filesize($fullPath),
+                        'type' => mime_content_type($fullPath),
+                    ]
+                ]
+            ];
         }else{
             $filePath = storage_path('app/admin/' . $userAuth['foto']);
             if(empty($userAuth['foto'] || is_null($userAuth['foto'])) || !file_exists($filePath) || !is_file($filePath)){
-                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Foto Profile tidak ditemukan'], $request->input('key'), $request->input('iv'))], 400);
+                return ['status'=>'error','message'=>'Foto Profile tidak ditemukan','statusCode'=>404];
             }
-            return response()->json(['status'=>'success','message'=>$aesController->encryptResponseFile(Crypt::decrypt(file_get_contents($filePath)), $request->input('key'), $request->input('iv'))]);
+            $fileContent = Crypt::decrypt(file_get_contents($filePath));
+            return [
+                'status' => 'success',
+                'data' => [
+                    'data' => base64_encode($fileContent),
+                    'meta' => [
+                        'filename' => 'default.jpg',
+                        'size' => filesize($filePath),
+                        'type' => finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $fileContent),
+                    ]
+                ]
+            ];
         }
+    }
+    public function fetchFotoProfile(Request $request, AESController $aesController){
+        $fotoProfile = self::getFotoProfile($request);
+        if($fotoProfile['status'] == 'error'){
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$fotoProfile['message']],$request->input('key'), $request->input('iv'))], $fotoProfile['statusCode']);
+        }
+        return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['data'=>$fotoProfile['data']],$request->input('key'), $request->input('iv'))], $fotoProfile['statusCode']);
     }
     public function updateProfile(Request $request, JWTController $jwtController, AESController $aesController, UtilityController $utilityController){
         $validator = Validator::make($request->only('email_new', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'foto'), [
@@ -54,13 +87,9 @@ class AdminController extends Controller
             'no_telpon.required' => 'Nomor telepon wajib di isi',
             'no_telpon.digits_between' => 'Nomor telepon tidak boleh lebih dari 13 karakter',
         ]);
-        if ($validator->fails()){
-            $errors = [];
-            foreach ($validator->errors()->toArray() as $field => $errorMessages){
-                $errors[$field] = $errorMessages[0];
-                break;
-            }
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>implode(', ', $errors)], $request->input('key'), $request->input('iv'))], 400);
+        if($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
         }
         $userAuth = $request->input('user_auth');
         if((!is_null($request->input('email_new')) && !empty($request->input('email_new'))) && ($request->input('email_new') != $userAuth['email']) && User::whereRaw("BINARY email = ?",[$request->input('email_new')])->exists()){
@@ -72,7 +101,7 @@ class AdminController extends Controller
                 return response()->json(['status' => 'error','message'=>$aesController->encryptResponse(['message'=>'File foto tidak valid'], $request->input('key'), $request->input('iv'))], 400);
             }
             if(!in_array($file->extension(), ['jpeg', 'png', 'jpg'])){
-                return response()->json(['status'=>'error','message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'], 400);
+                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'],$request->input('key'), $request->input('iv'))], 400);
             }
             $destinationPath = storage_path('app/admin/');
             $fileToDelete = $destinationPath . $userAuth['foto'];
@@ -125,13 +154,9 @@ class AdminController extends Controller
             'password_confirm.max'=>'Password konfirmasi maksimal 25 karakter',
             'password_confirm.regex'=>'Password konfirmasi terdiri dari 1 huruf besar, huruf kecil, angka dan karakter unik',
         ]);
-        if ($validator->fails()){
-            $errors = [];
-            foreach ($validator->errors()->toArray() as $field => $errorMessages){
-                $errors[$field] = $errorMessages[0];
-                break;
-            }
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>implode(', ', $errors)], $request->input('key'), $request->input('iv'))], 400);
+        if($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
         }
         $userAuth = $request->input('user_auth');
         $passOld = $request->input('password_old');

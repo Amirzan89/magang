@@ -134,7 +134,7 @@ Route::group(['middleware'=>['auth']], function(){
                 Route::put('/profile', [AdminControllerServices::class, 'updateProfile']);
                 Route::put('/password', [AdminControllerServices::class, 'updatePassword']);
             });
-            Route::get('/download/foto-profile', [AdminControllerServices::class, 'getFotoProfile']);
+            Route::get('/download/foto-profile', [AdminControllerServices::class, 'fetchFotoProfile']);
             Route::post('/logout', [AdminControllerServices::class, 'logout']);
         });
     });
