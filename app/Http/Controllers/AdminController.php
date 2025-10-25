@@ -25,14 +25,14 @@ class AdminController extends Controller
     public function getFotoProfile(Request $request, AESController $aesController){
         $userAuth = $request->input('user_auth');
         $referrer = $request->headers->get('referer');
-        if(!$referrer && $request->path() == 'admin/download/foto'){
+        if(!$referrer && $request->path() == 'api/admin/download/foto-profile'){
             return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Invalid URL Foto Profile'], $request->input('key'), $request->input('iv'))], 400);
         }
         if(empty($userAuth['foto']) || is_null($userAuth['foto'])){
             $defaultPhotoPath = 'admin/default.jpg';
             return response()->download(storage_path('app/' . $defaultPhotoPath), 'foto.' . pathinfo($defaultPhotoPath, PATHINFO_EXTENSION));
         }else{
-            $filePath = storage_path('app/admin' . $userAuth['foto']);
+            $filePath = storage_path('app/admin/' . $userAuth['foto']);
             if(empty($userAuth['foto'] || is_null($userAuth['foto'])) || !file_exists($filePath) || !is_file($filePath)){
                 return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Foto Profile tidak ditemukan'], $request->input('key'), $request->input('iv'))], 400);
             }
@@ -82,7 +82,6 @@ class AdminController extends Controller
             Storage::disk('admin')->delete($userAuth['foto']);
             $fotoName = $file->hashName();
             $fileData = Crypt::encrypt(file_get_contents($file));
-            $fileData = file_get_contents($file);
             Storage::disk('admin')->put($fotoName, $fileData);
         }
         $updatedProfile = User::where('id_user',$userAuth['id_user'])->update([
@@ -90,7 +89,7 @@ class AdminController extends Controller
             'nama_lengkap'=>$request->input('nama_lengkap'),
             'jenis_kelamin'=>$request->input('jenis_kelamin'),
             'no_telpon'=>$request->input('no_telpon'),
-            'foto' => $request->hasFile('foto') ? $fotoName : $userAuth['foto'],
+            'foto' => $file ? $fotoName : $userAuth['foto'],
             'updated_at'=> Carbon::now()
         ]);
         if(!$updatedProfile){
