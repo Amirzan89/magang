@@ -1,6 +1,8 @@
 <?php
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Ramsey\Uuid\Uuid;
 use Carbon\Carbon;
@@ -119,5 +121,46 @@ class UtilityController extends Controller
             return ['status' => 'success', 'data' => $result];
         }
         return ['status' => 'error', 'message' => 'Invalid uuid'];
+    }
+    private static function getExtensionFromMime($mime){
+        static $map = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'application/pdf' => 'pdf',
+            'text/plain' => 'txt',
+        ];
+        return $map[$mime] ?? 'bin';
+    }
+    public function base64File(Request $request): UploadedFile|array|null {
+        $input = $request->all();
+        $uploadedFiles = [];
+        $makeUploadedFile = function (string $key, array $fileItem): UploadedFile {
+            $meta = $fileItem['meta'];
+            $base64 = $fileItem['data'];
+            $decoded = base64_decode($base64, true);
+            if($decoded === false){
+                throw new \RuntimeException("Invalid base64 for {$key}");
+            }
+            $ext = self::getExtensionFromMime($meta['type'] ?? 'application/octet-stream');
+            $tmpPath = sys_get_temp_dir() . '/' . uniqid($key . '_', true) . '.' . $ext;
+            file_put_contents($tmpPath, $decoded);
+            return new UploadedFile($tmpPath, $meta['name'] ?? basename($tmpPath), $meta['type'] ?? 'application/octet-stream', $meta['size'] ?? null, true);
+        };
+        foreach($input as $key => $value){
+            if(is_array($value) && isset($value['data'], $value['meta'])){
+                $uploadedFiles[$key] = $makeUploadedFile($key, $value);
+            }else if(is_array($value) && isset($value[0]) && is_array($value[0]) && isset($value[0]['data'], $value[0]['meta'])){
+                foreach($value as $i => $fileItem){
+                    $uploadedFiles[$key][$i] = $makeUploadedFile($key . "_{$i}", $fileItem);
+                }
+            }
+        }
+        if(empty($uploadedFiles)){
+            return null;
+        }
+        if(count($uploadedFiles) === 1){
+            return reset($uploadedFiles);
+        }
+        return $uploadedFiles;
     }
 }

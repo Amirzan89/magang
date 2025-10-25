@@ -27,7 +27,7 @@ class LoginController extends Controller
                 $errors[$field] = $errorMessages[0];
                 break;
             }
-            return response()->json(['status' => 'error', 'message' => implode(', ', $errors)], 400);
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>implode(', ', $errors)], $request->input('key'), $request->input('iv'))], 400);
         }
         $email = $request->input("email");
         // $email = "Admin@gmail.com";
@@ -35,10 +35,10 @@ class LoginController extends Controller
         // $pass = "Admin@1234567890";
         $user = User::select('id_user', 'password')->whereRaw("BINARY email = ?",[$email])->first();
         if(is_null($user)){
-            return response()->json(['status' => 'error', 'message' => 'Email salah'], 400);
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Email salah'], $request->input('key'), $request->input('iv'))], 400);
         }
         if(!password_verify($pass,$user['password'])){
-            return response()->json(['status'=>'error','message'=>'Password salah'],400);
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Password salah'], $request->input('key'), $request->input('iv'))],400);
         }
         $jwtData = $jwtController->createJWTWebsite($refreshToken, $utilityController, $user['id_user']);
         if($jwtData['status'] == 'error'){
@@ -59,7 +59,7 @@ class LoginController extends Controller
             'expires' => time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')),
             ...$metaCookie
         ]);
-        return response()->json(['status' => 'success', 'message' => $aesController->encryptResponse(['message' => 'Login sukses silahkan masuk dashboard'], $request->input('key'), $request->input('iv'))]);
+        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Login sukses silahkan masuk dashboard'], $request->input('key'), $request->input('iv'))]);
     }
     public function redirectToProvider(){
         return Socialite::driver('google')->redirect();

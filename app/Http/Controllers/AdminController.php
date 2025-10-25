@@ -4,11 +4,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Security\JWTController;
 use App\Http\Controllers\Security\AESController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Carbon\Carbon;
 class AdminController extends Controller
 {
     private static $metaDelCookie;
@@ -38,13 +39,12 @@ class AdminController extends Controller
             return response()->json(['status'=>'success','message'=>$aesController->encryptResponseFile(Crypt::decrypt(file_get_contents($filePath)), $request->input('key'), $request->input('iv'))]);
         }
     }
-    public function updateProfile(Request $request, JWTController $jwtController, AESController $aesController){
+    public function updateProfile(Request $request, JWTController $jwtController, AESController $aesController, UtilityController $utilityController){
         $validator = Validator::make($request->only('email_new', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'foto'), [
             'email_new'=>'nullable|email',
             'nama_lengkap' => 'required|max:50',
             'jenis_kelamin' => 'required|in:laki-laki,perempuan',
             'no_telpon' => 'required|digits_between:11,13',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg|max:5120',
         ],[
             'email_new.email'=>'Email yang anda masukkan invalid',
             'nama_lengkap.required' => 'Nama admin wajib di isi',
@@ -53,9 +53,6 @@ class AdminController extends Controller
             'jenis_kelamin.in' => 'Jenis kelamin harus Laki-laki atau Perempuan',
             'no_telpon.required' => 'Nomor telepon wajib di isi',
             'no_telpon.digits_between' => 'Nomor telepon tidak boleh lebih dari 13 karakter',
-            'foto.image' => 'Foto Admin harus berupa gambar',
-            'foto.mimes' => 'Format foto admin tidak valid. Gunakan format jpeg, png, jpg',
-            'foto.max' => 'Ukuran foto admin tidak boleh lebih dari 5MB',
         ]);
         if ($validator->fails()){
             $errors = [];
@@ -66,30 +63,39 @@ class AdminController extends Controller
             return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>implode(', ', $errors)], $request->input('key'), $request->input('iv'))], 400);
         }
         $userAuth = $request->input('user_auth');
-        $profile = User::select('auth.id_auth', 'auth.password', 'admin.foto')->where('auth.id_auth',$userAuth['id_auth'])->join('auth', 'admin.id_auth', '=', 'auth.id_auth')->firstOrFail();
-        if(!is_null($request->input('email') || !empty($request->input('email'))) && $request->input('email') != $userAuth['email'] && User::whereRaw("BINARY email = ?",[$request->input('email')])->exists()){
+        if((!is_null($request->input('email_new')) && !empty($request->input('email_new'))) && ($request->input('email_new') != $userAuth['email']) && User::whereRaw("BINARY email = ?",[$request->input('email_new')])->exists()){
             return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Email sudah digunakan'], $request->input('key'), $request->input('iv'))], 400);
         }
-        $updatedAuthProfile = User::where('id_auth',$userAuth['id_auth'])->update([
-            'email'=>(is_null($request->input('email')) || empty($request->input('email'))) ? $userAuth['email'] : $request->input('email'),
+        $file = $utilityController->base64File($request);
+        if($file){
+            if(!($file instanceof \Illuminate\Http\UploadedFile)){
+                return response()->json(['status' => 'error','message'=>$aesController->encryptResponse(['message'=>'File foto tidak valid'], $request->input('key'), $request->input('iv'))], 400);
+            }
+            if(!in_array($file->extension(), ['jpeg', 'png', 'jpg'])){
+                return response()->json(['status'=>'error','message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'], 400);
+            }
+            $destinationPath = storage_path('app/admin/');
+            $fileToDelete = $destinationPath . $userAuth['foto'];
+            if(file_exists($fileToDelete) && !is_dir($fileToDelete)){
+                unlink($fileToDelete);
+            }
+            Storage::disk('admin')->delete($userAuth['foto']);
+            $fotoName = $file->hashName();
+            $fileData = Crypt::encrypt(file_get_contents($file));
+            $fileData = file_get_contents($file);
+            Storage::disk('admin')->put($fotoName, $fileData);
+        }
+        $updatedProfile = User::where('id_user',$userAuth['id_user'])->update([
+            'email'=>(is_null($request->input('email_new')) || empty($request->input('email_new'))) ? $userAuth['email'] : $request->input('email_new'),
+            'nama_lengkap'=>$request->input('nama_lengkap'),
+            'jenis_kelamin'=>$request->input('jenis_kelamin'),
+            'no_telpon'=>$request->input('no_telpon'),
+            'foto' => $request->hasFile('foto') ? $fotoName : $userAuth['foto'],
+            'updated_at'=> Carbon::now()
         ]);
-        $updateProfile = User::where('id_auth',$userAuth['id_auth'])->update([
-            'nama_admin'=>$request->input('nama_admin'),
-        ]);
-        if(!$updatedAuthProfile || !$updateProfile){
+        if(!$updatedProfile){
             return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Gagal memperbarui profile'], $request->input('key'), $request->input('iv'))], 500);
         }
-        // $updated = $jwtController->updateJWTProfile();
-        // if($updated['status'] == 'error'){
-        //     return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'update token error'], $request->input('key'), $request->input('iv'))], 500);
-        // }
-        // //get exppp
-        // //
-        // /////
-        // setcookie('token1', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
-        // setcookie('token2', '', ['expires'  => time() - 3600, ...self::$metaDelCookie]);
-        // setcookie('token1', $updated['data']['token'], ['expires'  => time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')), ...self::$metaDelCookie]);
-        // setcookie('token2', $updated['data']['refresh'], ['expires'  => time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')), ...self::$metaDelCookie]);
         return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Profile Anda Berhasi di perbarui'], $request->input('key'), $request->input('iv'))]);
     }
     public function updatePassword(Request $request, AESController $aesController){
