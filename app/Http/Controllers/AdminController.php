@@ -70,7 +70,7 @@ class AdminController extends Controller
         if($fotoProfile['status'] == 'error'){
             return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$fotoProfile['message']],$request->input('key'), $request->input('iv'))], $fotoProfile['statusCode']);
         }
-        return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['data'=>$fotoProfile['data']],$request->input('key'), $request->input('iv'))], $fotoProfile['statusCode']);
+        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>$fotoProfile['data']],$request->input('key'), $request->input('iv'))]);
     }
     public function updateProfile(Request $request, JWTController $jwtController, AESController $aesController, UtilityController $utilityController){
         $validator = Validator::make($request->only('email_new', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'foto'), [
