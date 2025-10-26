@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\Security\JWTController;
 use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\UtilityController;
@@ -12,7 +13,7 @@ use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Validator;
 class LoginController extends Controller
 {
-    public function Login(Request $request, JWTController $jwtController, RefreshToken $refreshToken, AESController $aesController, UtilityController $utilityController){
+    public function Login(Request $request, JWTController $jwtController, RefreshToken $refreshToken, AdminController $adminController, AESController $aesController, UtilityController $utilityController){
         $validator = Validator::make($request->only('email','password'), [
             'email' => 'required|email',
             'password' => 'required',
@@ -33,12 +34,12 @@ class LoginController extends Controller
         // $email = "Admin@gmail.com";
         $pass = $request->input("password");
         // $pass = "Admin@1234567890";
-        $user = User::select('id_user', 'password')->whereRaw("BINARY email = ?",[$email])->first();
+        $user = User::select('id_user', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'email', 'password', 'foto')->whereRaw("BINARY email = ?",[$email])->first();
         if(is_null($user)){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Email salah'], $request->input('key'), $request->input('iv'))], 400);
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Email anda salah'], $request->input('key'), $request->input('iv'))], 400);
         }
         if(!password_verify($pass,$user['password'])){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Password salah'], $request->input('key'), $request->input('iv'))],400);
+            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Password anda salah'], $request->input('key'), $request->input('iv'))],400);
         }
         $jwtData = $jwtController->createJWTWebsite($refreshToken, $utilityController, $user['id_user']);
         if($jwtData['status'] == 'error'){
@@ -51,6 +52,14 @@ class LoginController extends Controller
             'httponly' => true,
             'samesite' => 'Strict'
         ];
+        unset($user['id_user'], $user['password']);
+        $request->merge(['user_auth' => $user]);
+        $fotoStore = $adminController->getFotoProfile($request);
+        if($fotoStore['status'] == 'error'){
+            $user['foto'] = null;
+        }else{
+            $user['foto'] = $fotoStore['data'];
+        }
         setcookie('token1', json_encode(['value' => $jwtData['data']['token'], 'exp' => time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED'))]), [
             'expires' => time() + intval(env('JWT_ACCESS_TOKEN_EXPIRED')),
             ...$metaCookie
@@ -59,7 +68,7 @@ class LoginController extends Controller
             'expires' => time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')),
             ...$metaCookie
         ]);
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Login sukses silahkan masuk dashboard'], $request->input('key'), $request->input('iv'))]);
+        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Login sukses silahkan masuk dashboard','data'=>$user], $request->input('key'), $request->input('iv'))]);
     }
     public function redirectToProvider(){
         return Socialite::driver('google')->redirect();
