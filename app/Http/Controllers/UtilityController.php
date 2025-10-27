@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Security\AESController;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
@@ -9,32 +10,34 @@ use Carbon\Carbon;
 use DateTime;
 class UtilityController extends Controller
 {
-    public static function getView($name = null, $data = [], $cond = null){
-        $comps = function($domain) use ($data, $cond){
-            if($domain){
-                if(is_array($cond) && is_array($cond['cond']) && in_array('view', $cond['cond'])){
-                    $indexPath = public_path('index.html');
-                    if(!File::exists($indexPath)) {
-                        return response()->json(['error' => 'Page not found'], 404);
-                    }
-                    return response(File::get($indexPath));
-                }
-            }else{
-                if(is_array($cond) && array_key_exists('redirect', $cond)){
+    public static function getView(Request $request, AESController $aesController, $name = null, $data = [], $cond = null, $statusCode = 200){
+        $comps = function($domain) use ($request, $aesController, $data, $cond, $statusCode){
+            if(is_array($cond) && array_key_exists('redirect', $cond)){
+                if(in_array('isGoogleRedirect', $cond['cond']) || !$domain){
                     setCookie('__INITIAL_COSTUM_STATE__', base64_encode(json_encode($data)), 0, '/', null, false, false);
                     return redirect(env('FRONTEND_URL', 'http://localhost:3000') . $cond['redirect']);
                 }
             }
+            if($domain && is_array($cond) && isset($cond['cond']) && in_array('view', $cond['cond'])){
+                $indexPath = public_path('index.html');
+                if(!File::exists($indexPath)){
+                    return response()->json(['error' => 'Page not found'], 404);
+                }
+                $htmlContent = File::get($indexPath);
+                $htmlContent = str_replace('<body>', '<body><script>const csrfToken = "' . csrf_token() . '";</script>', $htmlContent);
+                $htmlContent = str_replace('</head>', '<script>window.__INITIAL_COSTUM_STATE__ = ' . json_encode($data) . '</script></head>', $htmlContent);
+                return response($htmlContent)->cookie('XSRF-TOKEN', csrf_token(), 0, '/', null, false, true);
+            }
             if(is_array($cond) && array_key_exists('json_cookie', $cond)){
                 setCookie('__INITIAL_COSTUM_STATE__', base64_encode($cond['json_cookie']), 0, '/', null, false, false);
-                return response()->json(['status' => 'success', 'data' => $data]);  
+                return response()->json(['status' => $statusCode ? 'success' : 'error', 'data' => $data], $statusCode);
             }else if(is_string($cond) && $cond == 'only_cookie'){
                 setCookie('__INITIAL_COSTUM_STATE__', base64_encode(json_encode($data)), 0, '/', null, false, false);
-                return response()->json(['status' => 'success']);
+                return response()->json(['status' => $statusCode ? 'success' : 'error'], $statusCode);
             }else if(is_string($cond) && $cond == 'json'){
-                return response()->json(['status' => 'success', 'data' => $data]);
+                return response()->json(['status' => $statusCode == 200 ? 'success' : 'error', 'data' => $data], $statusCode);
             }else if(is_string($cond) && $cond == 'json_encrypt'){
-                return response()->json(['status' => 'success', 'message' => $data]);
+                return response()->json(['status' => $statusCode == 200 ? 'success' : 'error', 'message' => $aesController->encryptResponse($data, $request->input('key'), $request->input('iv'))], $statusCode);
             }
             return response()->json(['status' => 'error', 'message' => 'invalid request'], 400);
         };

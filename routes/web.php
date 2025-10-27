@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Security\AESController;
 use App\Http\Controllers\Services\EventController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
@@ -10,6 +11,8 @@ use App\Http\Controllers\Pages\HomeController;
 use App\Http\Controllers\Pages\AdminController;
 
 use App\Http\Controllers\Auth\LoginController;
+
+use App\Http\Controllers\Services\GoogleController;
 use App\Http\Controllers\AdminController as AdminControllerServices;
 
 use App\Http\Controllers\Services\MailController;
@@ -60,40 +63,47 @@ Route::post('/test/session', [TestingSessionController::class, 'tesss']);
 
 
 Route::group(['middleware'=>['auth']], function(){
-    Route::get('/', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/about', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/about', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/events', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/events', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/search', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/search', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/event/{id}', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/event/{id}', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/booking/{id}', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/booking/{id}', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/event-booked', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/event-booked', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/login', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::group(['prefix'=>'/login'], function(){
+        Route::get('/', function(Request $request, AESController $aesController){
+            return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+        });
+        Route::get('/google', [GoogleController::class, 'redirectToProvider']);
     });
-    Route::get('/dashboard', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/dashboard', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/event-booked', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::get('/event-booked', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/profile', function(Request $request){
-        return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::group(['prefix'=>'/profile'], function(){
+        Route::get('/', function(Request $request, AESController $aesController){
+            return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+        });
+        Route::get('/bind-google', [GoogleController::class, 'redirectToProvider']);
     });
-    Route::middleware('auth')->get('/check-auth', fn() => response()->noContent());
+    Route::get('/google-callback', [GoogleController::class, 'handleGoogleCallback'])->withoutMiddleware(['auth']);
+    Route::get('/check-auth', fn() => response()->noContent());
 
     Route::group(['prefix'=>'/api'], function(){
         Route::post('/handshake', [RSAController::class, 'handshake_rsa']);
@@ -128,8 +138,9 @@ Route::group(['middleware'=>['auth']], function(){
             });
         });
         Route::group(['prefix'=>'/admin'], function(){
-            Route::post('/login', [LoginController::class, 'login'])->withoutMiddleware(['auth']);
-            Route::post('/login-google', [LoginController::class, 'loginGoogle'])->withoutMiddleware(['auth']);
+            Route::group(['prefix'=>'/login'], function(){
+                Route::post('/', [LoginController::class, 'login'])->withoutMiddleware(['auth']);
+            });
             Route::group(['prefix'=>'/update'], function(){
                 Route::put('/profile', [AdminControllerServices::class, 'updateProfile']);
                 Route::put('/password', [AdminControllerServices::class, 'updatePassword']);
@@ -139,6 +150,6 @@ Route::group(['middleware'=>['auth']], function(){
         });
     });
 });
-Route::fallback(function(Request $request){
-    return UtilityController::getView('', [], $request->wantsJson() ? 'json' : ['cond'=> ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+Route::fallback(function(Request $request, AESController $aesController){
+    return UtilityController::getView($request, $aesController, '', [], $request->wantsJson() ? 'json' : ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
 });

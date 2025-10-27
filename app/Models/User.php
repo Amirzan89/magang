@@ -13,7 +13,7 @@ class User extends Authenticatable implements JWTSubject
     public $incrementing = true;
     public $timestamps = true;
     protected $fillable = [ 
-        'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'email', 'password', 'foto'
+        'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'email', 'password', 'foto', 'google_id'
     ];
     protected $hidden = [
         'password',

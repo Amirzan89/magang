@@ -11,7 +11,7 @@ class DecryptRequest
     // private static $testURL = [];
     private static $testURL = ['/verify/create/email', '/verify/create/password'];
     public function handle(Request $request, Closure $next){
-        if(in_array($request->getPathInfo(), ['/api/handshake', '/sanctum/csrf-cookie']) || in_array($request->getPathInfo(), self::$testURL)){
+        if(in_array($request->getPathInfo(), ['/api/handshake', '/sanctum/csrf-cookie', '/login/google', '/profile/bind-google', '/google-callback']) || in_array($request->getPathInfo(), self::$testURL)){
             return $next($request);
         }
         $resMerseal = app()->make(AESController::class)->mersealToken($request);
