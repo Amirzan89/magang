@@ -12,6 +12,7 @@ class UtilityController extends Controller
 {
     public static function getView(Request $request, AESController $aesController, $name = null, $data = [], $cond = null, $statusCode = 200){
         $comps = function($domain) use ($request, $aesController, $data, $cond, $statusCode){
+            // return response()->json(base64_encode(json_encode($data)));
             if(is_array($cond) && array_key_exists('redirect', $cond)){
                 if(in_array('isGoogleRedirect', $cond['cond']) || !$domain){
                     setCookie('__INITIAL_COSTUM_STATE__', base64_encode(json_encode($data)), 0, '/', null, false, false);

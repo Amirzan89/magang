@@ -81,18 +81,24 @@ class GoogleController extends Controller
                 return UtilityController::getView($request, $aesController, '', ['message'=>'Email not verified','statusCode'=>403], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
             }
         }
-        $userDb = User::select('id_user')->whereRaw("BINARY email = ?", [$googleUser->getEmail()])->first();
+        $userDb = User::select('id_user', 'google_id', 'foto')->whereRaw("BINARY email = ?", [$googleUser->getEmail()])->first();
         if(is_null($userDb)){
-            return UtilityController::getView($request, $aesController, '', ['message'=>'User tidak ditemukan','statusCode'=>404], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
+            return UtilityController::getView($request, $aesController, '', ['message'=>'Akun dengan email tidak ditemukan','statusCode'=>404], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
         }
         if(($state['mode'] ?? '') === 'bind'){
+            if($userDb['google_id'] != ''){
+                return UtilityController::getView($request, $aesController, '', ['message'=>'Akun sudah dihubungkan ke google','statusCode'=>400], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
+            }
             User::whereRaw("BINARY email = ?", [$googleUser->getEmail()])->update([
                 'google_id' => $googleUser->getId(),
-                'foto' => $googleUser->getAvatar(),
+                'foto' => empty($userDb['foto']) || is_null($userDb['foto']) ? $googleUser->getAvatar() : $userDb['foto'],
             ]);
-            return $finalizeAndRespond($userDb, 'Akun berhasil dihubungkan ke google', '/profile'); //////??????
+            return $finalizeAndRespond($userDb, 'Akun berhasil dihubungkan ke google', '/profile');
         }
-        return $finalizeAndRespond($userDb, 'Anda Berhasil login', '/login'); //////??????
+        if(empty($userDb['google_id'])){
+            return UtilityController::getView($request, $aesController, '', ['message'=>'Akun anda belum terhubung dengan Google','statusCode'=>404], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
+        }
+        return $finalizeAndRespond($userDb, 'Anda Berhasil login', '/login');
     }
 }
 ?>

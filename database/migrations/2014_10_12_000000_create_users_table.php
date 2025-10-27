@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('no_telpon',15);
             $table->string('email',45);
             $table->string('password');
-            $table->string('foto',50)->nullable();
+            $table->string('foto',100)->nullable();
             $table->string('google_id')->nullable()->unique();
             $table->timestamps();
         });
