@@ -65,12 +65,12 @@ class AdminController extends Controller
             ];
         }
     }
-    public function fetchFotoProfile(Request $request, AESController $aesController){
+    public function fetchFotoProfile(Request $request, UtilityController $utilityController, AESController $aesController){
         $fotoProfile = self::getFotoProfile($request);
         if($fotoProfile['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$fotoProfile['message']],$request->input('key'), $request->input('iv'))], $fotoProfile['statusCode']);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$fotoProfile['message']], 'json_encrypt', $fotoProfile['statusCode']);
         }
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>$fotoProfile['data']],$request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['data'=>$fotoProfile['data']], 'json_encrypt');
     }
     public function updateProfile(Request $request, JWTController $jwtController, AESController $aesController, UtilityController $utilityController){
         $validator = Validator::make($request->only('email_new', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'foto'), [
@@ -89,19 +89,19 @@ class AdminController extends Controller
         ]);
         if($validator->fails()){
             $firstError = collect($validator->errors()->all())->first();
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
         $userAuth = $request->input('user_auth');
         if((!is_null($request->input('email_new')) && !empty($request->input('email_new'))) && ($request->input('email_new') != $userAuth['email']) && User::whereRaw("BINARY email = ?",[$request->input('email_new')])->exists()){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Email sudah digunakan'], $request->input('key'), $request->input('iv'))], 400);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Email sudah digunakan'], 'json_encrypt', 400);
         }
         $file = $utilityController->base64File($request);
         if($file){
             if(!($file instanceof \Illuminate\Http\UploadedFile)){
-                return response()->json(['status' => 'error','message'=>$aesController->encryptResponse(['message'=>'File foto tidak valid'], $request->input('key'), $request->input('iv'))], 400);
+                return $utilityController->getView($request, $aesController, '', ['message'=>'File foto tidak valid'], 'json_encrypt', 400);
             }
             if(!in_array($file->extension(), ['jpeg', 'png', 'jpg'])){
-                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'],$request->input('key'), $request->input('iv'))], 400);
+                return $utilityController->getView($request, $aesController, '', ['message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'], 'json_encrypt', 400);
             }
             $destinationPath = storage_path('app/admin/');
             $fileToDelete = $destinationPath . $userAuth['foto'];
@@ -122,11 +122,11 @@ class AdminController extends Controller
             'updated_at'=> Carbon::now()
         ]);
         if(!$updatedProfile){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Gagal memperbarui profile'], $request->input('key'), $request->input('iv'))], 500);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Gagal memperbarui profile'], 'json_encrypt', 500);
         }
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Profile Anda Berhasi di perbarui'], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['message'=>'Profile Anda Berhasi di perbarui'], 'json_encrypt');
     }
-    public function updatePassword(Request $request, AESController $aesController){
+    public function updatePassword(Request $request, UtilityController $utilityController, AESController $aesController){
         $validator = Validator::make($request->only('password_old', 'password', 'password_confirm'), [
             'password_old' => 'required',
             'password' => [
@@ -156,31 +156,31 @@ class AdminController extends Controller
         ]);
         if($validator->fails()){
             $firstError = collect($validator->errors()->all())->first();
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
         $userAuth = $request->input('user_auth');
         $passOld = $request->input('password_old');
         $pass = $request->input('password');
         $passConfirm = $request->input('password_confirm');
         if($pass !== $passConfirm){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Password Harus Sama'], $request->input('key'), $request->input('iv'))],400);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Password Harus Sama'], 'json_encrypt', 400);
         }
         $profileDb = User::select('password')->where('id_user',$userAuth['id_user'])->first();
         if(is_null($profileDb)){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'User Tidak Ditemukan'], $request->input('key'), $request->input('iv'))], 404);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'User Tidak Ditemukan'], 'json_encrypt', 404);
         }
         if(!password_verify($passOld,$profileDb->password)){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Password salah'], $request->input('key'), $request->input('iv'))],400);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Password Salah'], 'json_encrypt', 400);
         }
         $updatePassword = User::where('id_user',$userAuth['id_user'])->update([
             'password' => Hash::make($pass),
         ]);
         if(!$updatePassword){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Gagal memperbarui password profile'], $request->input('key'), $request->input('iv'))], 500);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Gagal memperbarui password profile'], 'json_encrypt', 500);
         }
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Password profile berhasil di perbarui'], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['message'=>'Password profile berhasil di perbarui'], 'json_encrypt');
     }
-    public function logout(Request $request, JWTController $jwtController, AESController $aesController){
+    public function logout(Request $request, JWTController $jwtController, UtilityController $utilityController, AESController $aesController){
         $jwtController->deleteRefreshToken($request->input('user_auth')['id_user'],$request->input('user_auth')['number']);
         $metaCookie = [
             'expires'  => time() - 3600,
@@ -193,7 +193,7 @@ class AdminController extends Controller
         setcookie('token1', '', $metaCookie);
         setcookie('token2', '', $metaCookie);
         setcookie('token3', '', $metaCookie);
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Logout berhasil silahkan login kembali'], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['message'=>'Logout berhasil silahkan login kembali'], 'json_encrypt');
     }
 }
 ?>

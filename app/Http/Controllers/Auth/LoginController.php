@@ -24,7 +24,7 @@ class LoginController extends Controller
         ]);
         if ($validator->fails()) {
             $firstError = collect($validator->errors()->all())->first();
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
         $email = $request->input("email");
         // $email = "Admin@gmail.com";
@@ -32,10 +32,10 @@ class LoginController extends Controller
         // $pass = "Admin@1234567890";
         $user = User::select('id_user', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'email', 'password', 'foto')->whereRaw("BINARY email = ?",[$email])->first();
         if(is_null($user)){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Email anda salah'], $request->input('key'), $request->input('iv'))], 400);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Email anda salah'], 'json_encrypt', 400);
         }
         if(!password_verify($pass,$user['password'])){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>'Password anda salah'], $request->input('key'), $request->input('iv'))],400);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Password anda salah'], 'json_encrypt', 400);
         }
         $jwtData = $jwtController->createJWTWebsite($refreshToken, $utilityController, $user['id_user']);
         if($jwtData['status'] == 'error'){
@@ -64,7 +64,7 @@ class LoginController extends Controller
             'expires' => time() + intval(env('JWT_REFRESH_TOKEN_EXPIRED')),
             ...$metaCookie
         ]);
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['message'=>'Login sukses silahkan masuk dashboard','data'=>$user], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['message'=>'Login sukses silahkan masuk dashboard','data'=>$user], 'json_encrypt');
     }
 }
 ?>

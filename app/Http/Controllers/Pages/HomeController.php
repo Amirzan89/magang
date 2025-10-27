@@ -8,15 +8,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 class HomeController extends Controller
 {
-    public function showHome(Request $request, EventController $eventController, AESController $aesController){
+    public function showHome(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
         $upcoming_events = $eventController->dataCacheEvent(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true);
         if($upcoming_events['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$upcoming_events['message']],$request->input('key'), $request->input('iv'))], $upcoming_events['statusCode']);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$upcoming_events['message']], 'json_encrypt', $upcoming_events['statusCode']);
         }
         $upcoming_events = $upcoming_events['data'];
         $past_events = $eventController->dataCacheEvent(null, null, 4, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true);
         if($past_events['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$past_events['message']],$request->input('key'), $request->input('iv'))], $past_events['statusCode']);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$past_events['message']], 'json_encrypt', $past_events['statusCode']);
         }
         $past_events = $past_events['data'];
         $listNamePhoto = [
@@ -60,9 +60,9 @@ class HomeController extends Controller
             'past_events' => $past_events,
             'reviews' => $reviews,
         ];
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>$dataShow], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json_encrypt');
     }
-    public function showAbout(Request $request, AESController $aesController){
+    public function showAbout(Request $request, UtilityController $utilityController, AESController $aesController){
         $listNamePhoto = [
             'john' => '/img/reviews/john.jpeg',
             'alex' => '/img/reviews/alex.jpg',
@@ -109,9 +109,9 @@ class HomeController extends Controller
             ],
             'reviews' => $reviews,
         ];
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>$dataShow], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json_encrypt');
     }
-    public function showEvents(Request $request, EventController $eventController, AESController $aesController){
+    public function showEvents(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
         $validator = Validator::make($request->query(), [
             'next_page' => 'nullable|string|max:100',
             'limit' => 'nullable|numeric|max:30',
@@ -123,36 +123,36 @@ class HomeController extends Controller
         ]);
         if($validator->fails()){
             $firstError = collect($validator->errors()->all())->first();
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
         $allEvent = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true, ['next_page' => $request->query('next_page'), 'limit' => $request->query('limit') ? $request->query('limit') : 5, 'column_id' => 'eventid', 'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time']);
         if($allEvent['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$allEvent['message']],$request->input('key'), $request->input('iv'))], $allEvent['statusCode']);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$allEvent['message']], 'json_encrypt', $allEvent['statusCode']);
         }
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data' => $allEvent['data'], ...$allEvent['meta_data']], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['data'=>$allEvent['data'], ...$allEvent['meta_data']], 'json_encrypt');
     }
-    public function getEventCategory(Request $request, EventController $eventController, AESController $aesController){
+    public function getEventCategory(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
         $categoryData = $eventController->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null, false);
         if($categoryData['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$categoryData['message']],$request->input('key'), $request->input('iv'))], $categoryData['statusCode']);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
         }
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>$categoryData['data']], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['data'=>$categoryData['data']], 'json_encrypt');
     }
-    public function showEventDetail(Request $request, EventController $eventController, AESController $aesController, $id){
+    public function showEventDetail(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController, $id){
         $eventDetail = $eventController->dataCacheEvent(null, $id, null, ['id', 'eventgroup', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'price', 'is_free' , 'link_event', 'location_name', 'location_link', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'], ['id', 'event_group', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'price', 'is_free', 'link_event', 'location_name', 'location_link', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'], true, null, false);
         if($eventDetail['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$eventDetail['message']],$request->input('key'), $request->input('iv'))], $eventDetail['statusCode']);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$eventDetail['message']], 'json_encrypt', $eventDetail['statusCode']);
         }
         $eventDetail = $eventDetail['data'];
         $allEvent = $eventController->dataCacheEvent(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true);
         if($allEvent['status'] == 'error'){
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$allEvent['message']],$request->input('key'), $request->input('iv'))], $allEvent['statusCode']);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$allEvent['message']], 'json_encrypt', $allEvent['statusCode']);
         }
         $allEvent = $allEvent['data'];
         $dataShow = [
             'detail_event' => $eventDetail,
             'all_events' => $allEvent,
         ];
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data'=>$dataShow], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json_encrypt');
     }
 }

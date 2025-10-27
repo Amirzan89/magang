@@ -286,12 +286,10 @@ class EventController extends Controller
         return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle, $pagination);
     }
 
-    public function searchEvent(Request $request, AESController $aesController){
+    public function searchEvent(Request $request, UtilityController $utilityController, AESController $aesController){
         $categoryData = $this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null);
         if($categoryData['status'] === 'error'){
-            $codeRes = $categoryData['statusCode'];
-            unset($categoryData['statusCode']);
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$categoryData['message']],$request->input('key'), $request->input('iv'))], $codeRes);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
         }
         $categories = collect($categoryData['data'])->pluck('event_group')->implode(',');
         $validator = Validator::make($request->query(), [
@@ -321,7 +319,7 @@ class EventController extends Controller
         ]);
         if($validator->fails()){
             $firstError = collect($validator->errors()->all())->first();
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
         $filters = [
             'category' => $request->query('f_category', []),
@@ -339,9 +337,9 @@ class EventController extends Controller
             unset($searchData['statusCode']);
             return response()->json($searchData, $codeRes);
         }
-        return response()->json(['status'=>'success','message'=>$aesController->encryptResponse(['data' => $searchData['data'], ...$searchData['meta_data']], $request->input('key'), $request->input('iv'))]);
+        return $utilityController->getView($request, $aesController, '', ['data'=>$searchData['data'], ...$searchData['meta_data']], 'json_encrypt');
     }
-    public function bookingEvent(Request $request, AESController $aesController){
+    public function bookingEvent(Request $request, UtilityController $utilityController, AESController $aesController){
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string|max:100',
             'gender' => 'required|in:M,F',
@@ -365,7 +363,7 @@ class EventController extends Controller
         ]);
         if($validator->fails()){
             $firstError = collect($validator->errors()->all())->first();
-            return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'],$request->input('key'), $request->input('iv'))], 422);
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
         $directory = storage_path('app/database');
         if(!file_exists($directory)){
@@ -411,23 +409,23 @@ class EventController extends Controller
             $responseJson = json_decode($res->body(), true);
             $decServer = json_decode(openssl_decrypt(hex2bin($responseJson['message']), 'AES-256-CBC', $keyPyxis, OPENSSL_RAW_DATA, $ivPyxis), true);
             if(isset($decServer['status']) && $decServer['status'] === 'error'){
-                return response()->json(['status'=>'error','message'=>$aesController->encryptResponse(['message'=>$decServer['message']],$request->input('key'), $request->input('iv'))], 500);
+                return $utilityController->getView($request, $aesController, '', ['message'=>$decServer['message']], 'json_encrypt', 500);
             }
             // Mail::to($request->input('email'))->send(new EventBookingMail([
-            //     'email' => $request->input('email'),
-            //     'name' => $request->input('nama'),
-            //     'event_id' => $request->input('event_id')
-            // ]));
-            return response()->json(['status'=>'success','message'=>app()->make(AESController::class)->encryptResponse(['message'=>'Booking Event telah berhasil'], $request->input('key'), $request->input('iv'))]);
+                //     'email' => $request->input('email'),
+                //     'name' => $request->input('nama'),
+                //     'event_id' => $request->input('event_id')
+                // ]));
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Booking Event telah berhasil'], 'json_encrypt');
         }catch(RequestException $e){
             file_put_contents($counterFile, json_encode(['counter' => str_pad(intval($jsonData['counter']), 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
-            return response()->json(['status' => 'error','message' => $aesController->encryptResponse(['message'=>'Gagal booking event silahkan kirim ulang'],$request->input('key'), $request->input('iv'))], $e->response->status());
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Gagal booking event silahkan kirim ulang'], 'json_encrypt', $e->response->status());
         }catch(Throwable $e){
             file_put_contents($counterFile, json_encode(['counter' => str_pad(intval($jsonData['counter']), 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
-            return response()->json(['status' => 'error','message' => $aesController->encryptResponse(['message'=>'Gagal booking event silahkan kirim ulang'],$request->input('key'), $request->input('iv'))], 500);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Gagal booking event silahkan kirim ulang'], 'json_encrypt', 500);
         }catch(Error $e){
             file_put_contents($counterFile, json_encode(['counter' => str_pad(intval($jsonData['counter']), 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
-            return response()->json(['status' => 'error','message' => $aesController->encryptResponse(['message'=>'Gagal booking event silahkan kirim ulang'],$request->input('key'), $request->input('iv'))], 500);
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Gagal booking event silahkan kirim ulang'], 'json_encrypt', 500);
         }
     }
 }
