@@ -30,7 +30,7 @@ class LoginController extends Controller
         // $email = "Admin@gmail.com";
         $pass = $request->input("password");
         // $pass = "Admin@1234567890";
-        $user = User::select('id_user', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'email', 'password', 'foto')->whereRaw("BINARY email = ?",[$email])->first();
+        $user = User::select('id_user', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'email', 'password', 'foto', 'google_id')->whereRaw("BINARY email = ?",[$email])->first();
         if(is_null($user)){
             return $utilityController->getView($request, $aesController, '', ['message'=>'Email anda salah'], 'json_encrypt', 400);
         }

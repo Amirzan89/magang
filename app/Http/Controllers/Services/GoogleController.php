@@ -83,7 +83,7 @@ class GoogleController extends Controller
         }
         $userDb = User::select('id_user', 'google_id', 'foto')->whereRaw("BINARY email = ?", [$googleUser->getEmail()])->first();
         if(is_null($userDb)){
-            return UtilityController::getView($request, $aesController, '', ['message'=>'Akun dengan email tidak ditemukan','statusCode'=>404], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
+            return UtilityController::getView($request, $aesController, '', ['message'=>'Akun tidak ditemukan','statusCode'=>404], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
         }
         if(($state['mode'] ?? '') === 'bind'){
             if($userDb['google_id'] != ''){
@@ -93,12 +93,12 @@ class GoogleController extends Controller
                 'google_id' => $googleUser->getId(),
                 'foto' => empty($userDb['foto']) || is_null($userDb['foto']) ? $googleUser->getAvatar() : $userDb['foto'],
             ]);
-            return $finalizeAndRespond($userDb, 'Akun berhasil dihubungkan ke google', '/profile');
+            return $finalizeAndRespond($userDb, 'Akun anda berhasil dihubungkan ke google', '/profile');
         }
         if(empty($userDb['google_id'])){
             return UtilityController::getView($request, $aesController, '', ['message'=>'Akun anda belum terhubung dengan Google','statusCode'=>404], ['cond'=> ['view', 'redirect', 'isGoogleRedirect'], 'redirect' => '/login']);
         }
-        return $finalizeAndRespond($userDb, 'Anda Berhasil login', '/login');
+        return $finalizeAndRespond($userDb, 'Anda berhasil login', '/login');
     }
 }
 ?>

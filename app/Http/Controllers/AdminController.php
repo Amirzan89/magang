@@ -28,6 +28,9 @@ class AdminController extends Controller
         if(!$referrer && $request->path() == 'api/admin/download/foto-profile'){
             return ['status'=>'error','message'=>'Invalid URL Foto Profile','statusCode'=>400];
         }
+        if(!empty($userAuth['google_id']) && str_starts_with($userAuth['foto'], 'https://lh3.googleusercontent.com')){
+            return ['status' => 'success', 'data' => $userAuth['foto']];
+        }
         if(empty($userAuth['foto']) || is_null($userAuth['foto'])){
             $defaultPhotoPath = 'admin/default.jpg';
             $fullPath = storage_path('app/' . $defaultPhotoPath);
