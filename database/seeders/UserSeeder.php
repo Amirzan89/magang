@@ -74,7 +74,7 @@ class UserSeeder extends Seeder
             'updated_at'=>Carbon::now()
         ]);
         $directory = storage_path('app/database');
-        if (!file_exists($directory)){
+        if(!file_exists($directory)){
             mkdir($directory, 0755, true);
         }
         Storage::disk('admin')->put('/2.jpg', Crypt::encrypt(file_get_contents(database_path('seeders/image/2.jpg'))));

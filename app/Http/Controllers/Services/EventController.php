@@ -17,9 +17,9 @@ class EventController extends Controller
     private static $jsonFileEventGroup;
     private static $jsonFileEventBookingCounter;
     public function __construct(){
-        self::$jsonFileEvent = storage_path('app/database/events.json');
-        self::$jsonFileEventGroup = storage_path('app/database/event-groups.json');
-        self::$jsonFileEventBookingCounter = storage_path('app/database/event_booking_counter.json');
+        self::$jsonFileEvent = storage_path('app/cache/events.json');
+        self::$jsonFileEventGroup = storage_path('app/cache/event-groups.json');
+        self::$jsonFileEventBookingCounter = storage_path('app/cache/event_booking_counter.json');
     }
     private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false, $pagination = null){
         if(!is_null($id) && !empty($id) && $id){
@@ -196,7 +196,7 @@ class EventController extends Controller
         return ['status' => 'success', 'data' => $inp, 'meta_data' => $metaData];
     }
     public function dataCacheEventGroup($col = null, $alias = null, $searchFilter = null, $pagination = null){
-        $directory = storage_path('app/database');
+        $directory = storage_path('app/cache');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
         }
@@ -229,7 +229,7 @@ class EventController extends Controller
         return self::handleCache($result, null, null, $col, $alias, false, $searchFilter, false, $pagination);
     }
     public function dataCacheEvent($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false, $pagination = null){
-        $directory = storage_path('app/database');
+        $directory = storage_path('app/cache');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
         }
@@ -365,7 +365,7 @@ class EventController extends Controller
             $firstError = collect($validator->errors()->all())->first();
             return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
-        $directory = storage_path('app/database');
+        $directory = storage_path('app/cache');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
         }

@@ -30,6 +30,11 @@ return [
 
     'disks' => [
 
+        'cache' => [
+            'driver' => 'local',
+            'root' => storage_path('app/cache'),
+            'throw' => false,
+        ],
         'database' => [
             'driver' => 'local',
             'root' => storage_path('app/database'),
