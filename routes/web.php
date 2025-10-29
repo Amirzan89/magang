@@ -119,27 +119,17 @@ Route::group(['middleware'=>['auth']], function(){
         Route::post('/dashboard', [AdminController::class, 'showDashboard']);
         Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);
         Route::post('/profile', [AdminController::class, 'showProfile']);
-        Route::group(['prefix'=>'/verify'], function(){
-            Route::group(['prefix'=>'/create'], function(){ 
-                Route::post('/password', [MailController::class, 'createForgotPassword'])->withoutMiddleware(['auth']);
-                Route::post('/email',[MailController::class, 'createVerifyEmail'])->withoutMiddleware(['auth']);
-            });
-            Route::group(['prefix'=>'/password'], function(){
-                Route::get('/{any?}', [AdminControllerServices::class, 'getChangePass'])->where('any','.*')->withoutMiddleware(['auth']);
-                Route::post('/',[AdminControllerServices::class, 'changePassEmail'])->withoutMiddleware(['auth']);
-            });
-            Route::group(['prefix'=>'/email'], function(){
-                Route::get('/{any?}', [AdminControllerServices::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth']);
-                Route::post('/',[AdminControllerServices::class, 'verifyEmail'])->where('any','.*')->withoutMiddleware(['auth']);
-            });
-            Route::group(['prefix'=>'/otp'], function(){
-                Route::post('/password', [AdminControllerServices::class, 'getChangePass'])->withoutMiddleware(['auth']);
-                Route::post('/email', [AdminControllerServices::class, 'verifyEmail'])->withoutMiddleware(['auth']);
-            });
-        });
         Route::group(['prefix'=>'/admin'], function(){
             Route::group(['prefix'=>'/login'], function(){
                 Route::post('/', [LoginController::class, 'login'])->withoutMiddleware(['auth']);
+            });
+            Route::group(['prefix'=>'/verify'],function(){
+                Route::post('/create/password',[MailController::class, 'createForgotPassword']);
+                Route::group(['prefix'=>'/password'],function(){
+                    Route::get('/{any?}',[AdminControllerServices::class, 'getChangePass'])->where('any','.*')->name('verify.password');
+                    Route::post('/',[AdminControllerServices::class, 'changePassEmail']);
+                });
+                Route::post('/otp/password',[AdminControllerServices::class, 'getChangePass']);
             });
             Route::group(['prefix'=>'/update'], function(){
                 Route::put('/profile', [AdminControllerServices::class, 'updateProfile']);

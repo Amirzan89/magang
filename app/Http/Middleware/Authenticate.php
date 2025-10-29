@@ -131,7 +131,7 @@ class Authenticate
         }else{
             //if cookie gone
             $authPage = ['/dashboard', '/profil', '/event-booked'];
-            $prefAuth = ['/admin/'];
+            $prefAuth = ['/admin/kelola/'];
             if($isPath($currentPath, $authPage, $prefAuth) || $isPath($currentPath, array_map(fn($path) => '/api' . $path, $authPage), array_map(fn($path) => '/api' . $path, $prefAuth))){
                 if(isset($_COOKIE['token1'])){
                     $token1 = json_decode($_COOKIE['token1'], true);
@@ -144,12 +144,12 @@ class Authenticate
                     }
                     $decoded = $jwtController->decode($request, $utilityController, $token1['value'], 'JWT_SECRET');
                     if($decoded['status'] == 'error'){
-                        return $this->handleRedirect($request, $utilityController, $aesController, 'error');
+                        return $this->handleRedirect($request, $utilityController, $aesController, ['isCondition'=>'error']);
                     }
                     $jwtController->deleteRefreshToken($decoded['data']['user'],$decoded['data']['number']);
-                    return $this->handleRedirect($request, $utilityController, $aesController, 'error');
+                    return $this->handleRedirect($request, $utilityController, $aesController, ['isCondition'=>'error']);
                 }else{
-                    return $this->handleRedirect($request, $utilityController, $aesController, 'error');
+                    return $this->handleRedirect($request, $utilityController, $aesController, ['isCondition'=>'error']);
                 }
             }
             if($currentPath == '/check-auth'){

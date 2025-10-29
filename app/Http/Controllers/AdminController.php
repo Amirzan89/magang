@@ -1,13 +1,17 @@
 <?php
 namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Services\MailController;
 use App\Http\Controllers\Security\JWTController;
 use App\Http\Controllers\Security\AESController;
+use App\Models\RefreshToken;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Verifikasi;
 use App\Models\User;
 use Carbon\Carbon;
 class AdminController extends Controller
@@ -74,6 +78,130 @@ class AdminController extends Controller
             return $utilityController->getView($request, $aesController, '', ['message'=>$fotoProfile['message']], 'json_encrypt', $fotoProfile['statusCode']);
         }
         return $utilityController->getView($request, $aesController, '', ['data'=>$fotoProfile['data']], 'json_encrypt');
+    }
+    public function getChangePass(Request $request, UtilityController $utilityController, AESController $aesController, $any = null){
+        if(Str::startsWith($request->path(), 'verify/password') && $request->isMethod('get')){
+            if(!$request->hasValidSignature()){
+                return $utilityController->getView($request, $aesController, '', ['message' => 'Link invalid or expired'], ['cond' => ['view', 'redirect'], 'redirect' => '/forgot-password'], 400);
+            }
+            $email = $request->query('email');
+            if(!Verifikasi::whereRaw("BINARY link = ?", [$any])->exists()){
+                return $utilityController->getView($request, $aesController, '', ['message'=>'Link invalid'], ['cond'=>['view','redirect'], 'redirect'=>'/forgot-password'], 400);
+            }
+            if (!Verifikasi::whereRaw("BINARY email = ?", [$email])->exists()){
+                return $utilityController->getView($request, $aesController, '', ['message'=>'Email invalid'], ['cond'=>['view','redirect'], 'redirect'=>'/forgot-password'], 400);
+            }
+            if(!Verifikasi::whereRaw("BINARY email = ? AND BINARY link = ?", [$email, $any])->exists()){
+                return $utilityController->getView($request, $aesController, '', ['message'=>'Link invalid'], ['cond'=>['view','redirect'], 'redirect'=>'/forgot-password'], 400);
+            }
+            if(!Verifikasi::whereRaw("BINARY email = ?", [$email])->where('updated_at', '>=', now()->subMinutes(15))->exists()){
+                // Verifikasi::whereRaw("BINARY email = ? AND deskripsi = 'password'", [$email])->delete();
+                return $utilityController->getView($request, $aesController, '', ['message' => 'Link expired'], ['cond' => ['view','redirect'], 'redirect' => '/forgot-password'], 400);
+            }
+            return $utilityController->getView($request, $aesController, '',['data'=>[
+                'email' => $email,
+                'title' => 'Reset Password',
+                'link'  => $any,
+                'otp'   => '',
+                'div'   => 'verifyDiv',
+                'description' => 'password'
+            ]], ['cond'=>['view','redirect'], 'redirect'=>'/forgot-password'], 400);
+        }
+        $validator = Validator::make($request->only('email', 'otp'), [
+            'email'=>'required|email',
+            'otp' =>'required'
+        ],[
+            'email.required'=>'Email harus di isi',
+            'email.email'=>'Email yang anda masukkan invalid',
+            'otp.required'=>'OTP harus di isi',
+        ]);
+        if($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json', 422);
+        }
+        $user = User::select('id_user')->whereRaw("BINARY email = ?",[$request->input('email')])->first();
+        if(is_null($user)){
+            return response()->json(['status'=>'error','message'=>'Email tidak terdaftar !'],400);
+        }
+        $email = $request->input('email');
+        $otp = $request->input('otp');
+        if(!Verifikasi::whereRaw("BINARY email = ?", [$email])->exists()){
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Email invalid'], 'json', 400);
+        }
+        if(!Verifikasi::whereRaw("BINARY email = ? AND BINARY kode_otp = ?", [$email, $otp])->exists()){
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Kode OTP invalid'], 'json', 400);
+        }
+        if(!Verifikasi::whereRaw("BINARY email = ?", [$email])->where('updated_at', '>=', now()->subMinutes(15))->exists()){
+            // Verfikasi::whereRaw("BINARY email = ? AND deskripsi = 'password'", [$email])->delete();
+            return $utilityController->getView($request, $aesController, '', ['message'=>'Kode OTP expired'], 'json', 400);
+        }
+        return $utilityController->getView($request, $aesController, '', ['message'=>'OTP Anda benar, silahkan ganti password'], 'json');
+    }
+    public function changePassEmail(Request $request, JWTController $jwtController, RefreshToken $refreshToken, UtilityController $utilityController, AESController $aesController){
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+            'password' => [
+                'required', 'string', 'min:8', 'max:25',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/'
+            ],
+            'password_confirm' => [
+                'required', 'string', 'min:8', 'max:25',
+                'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/'
+            ],
+            'otp' => 'nullable',
+            'link' => 'nullable',
+        ], [
+            'email.required' => 'Email wajib di isi',
+            'email.email' => 'Email yang anda masukkan invalid',
+            'password.required' => 'Password wajib di isi',
+            'password.min' => 'Password minimal 8 karakter',
+            'password.max' => 'Password maksimal 25 karakter',
+            'password.regex' => 'Password baru wajib terdiri dari 1 huruf besar, huruf kecil, angka dan karakter unik',
+            'password_confirm.required' => 'Password konfirmasi konfirmasi harus di isi',
+            'password_confirm.min' => 'Password konfirmasi minimal 8 karakter',
+            'password_confirm.max' => 'Password konfirmasi maksimal 25 karakter',
+            'password_confirm.regex' => 'Password konfirmasi terdiri dari 1 huruf besar, huruf kecil, angka dan karakter unik',
+        ]);
+        if($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return $utilityController->getView($request, $aesController, '', ['message' => $firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json', 422);
+        }
+        $email = $request->input('email');
+        $password = $request->input('password');
+        $passwordConfirm = $request->input('password_confirm');
+        $otp = $request->input('otp');
+        $link = $request->input('link');
+        $user = User::select('nama_lengkap')->whereRaw("BINARY email = ?", [$email])->first();
+        if(is_null($user)){
+            return $utilityController->getView($request, $aesController, '', ['message' => 'Email tidak terdaftar !'], 'json', 400);
+        }
+        $verify = Verifikasi::whereRaw("BINARY email = ?", [$email])->where('deskripsi', 'password')->first();
+        if(is_null($verify)){
+            return $utilityController->getView($request, $aesController, '', ['message' => 'Email invalid'], 'json', 400);
+        }
+        if($password !== $passwordConfirm){
+            return $utilityController->getView($request, $aesController, '', ['message' => 'Password harus Sama'], 'json', 400);
+        }
+        $expTime = MailController::getConditionOTP()[($verify->send - 1)] ?? 5;
+        $diffMinutes = Carbon::parse($verify->updated_at)->diffInMinutes(Carbon::now());
+        if($diffMinutes >= $expTime){
+            return $utilityController->getView($request, $aesController, '', ['message' => (empty($link) ? 'Token' : 'Link') . ' expired'], 'json', 400);
+        }
+        if(is_null($link) || empty($link)){
+            if($verify->kode_otp !== $otp){
+                return $utilityController->getView($request, $aesController, '', ['message' => 'Kode OTP invalid'], 'json', 400);
+            }
+        }else{
+            if($verify->link !== $link){
+                return $utilityController->getView($request, $aesController, '', ['message' => 'Link invalid'], 'json', 400);
+            }
+        }
+        $updated = User::whereRaw("BINARY email = ?", [$email])->update(['password' => Hash::make($password)]);
+        if(!$updated){
+            return $utilityController->getView($request, $aesController, '', ['message' => 'error update password'], 'json', 500);
+        }
+        Verifikasi::whereRaw("BINARY email = ?", [$email])->where('deskripsi', 'password')->delete();
+        return $utilityController->getView($request, $aesController, '', ['message' => 'Ganti password berhasil, silahkan login'], 'json');
     }
     public function updateProfile(Request $request, JWTController $jwtController, AESController $aesController, UtilityController $utilityController){
         $validator = Validator::make($request->only('email_new', 'nama_lengkap', 'jenis_kelamin', 'no_telpon', 'foto'), [

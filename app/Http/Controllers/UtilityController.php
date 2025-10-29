@@ -18,6 +18,10 @@ class UtilityController extends Controller
                     setCookie('__INITIAL_COSTUM_STATE__', base64_encode(json_encode($data)), 0, '/', null, false, false);
                     return redirect(env('FRONTEND_URL', 'http://localhost:3000') . $cond['redirect']);
                 }
+                if(in_array('isForgotPasswordRedirect', $cond['cond']) || !$domain){
+                    setCookie('__INITIAL_COSTUM_STATE__', base64_encode(json_encode($data)), 0, '/', null, false, false);
+                    return redirect(env('FRONTEND_URL', 'http://localhost:3000') . $cond['redirect']);
+                }
             }
             if($domain && is_array($cond) && isset($cond['cond']) && in_array('view', $cond['cond'])){
                 $indexPath = public_path('index.html');
