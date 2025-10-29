@@ -93,6 +93,9 @@ Route::group(['middleware'=>['auth']], function(){
     Route::get('/dashboard', function(Request $request, AESController $aesController){
         return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
+    Route::get('/kelola-event', function(Request $request, AESController $aesController){
+        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    });
     Route::get('/event-booked', function(Request $request, AESController $aesController){
         return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
@@ -117,6 +120,10 @@ Route::group(['middleware'=>['auth']], function(){
         Route::post('/booking/{id}', [HomeController::class, 'showEventDetail']);
         Route::post('/event-booking', [EventController::class, 'bookingEvent']);
         Route::post('/dashboard', [AdminController::class, 'showDashboard']);
+        Route::group(['prefix'=>'/kelola-event'], function(){
+            Route::post('/', [AdminController::class, 'showEventsList']);
+            Route::delete('/', [AdminController::class, 'showEventsList']);
+        });
         Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);
         Route::post('/profile', [AdminController::class, 'showProfile']);
         Route::group(['prefix'=>'/admin'], function(){

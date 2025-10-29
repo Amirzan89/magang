@@ -43,14 +43,24 @@ class AdminController extends Controller
         ];
         return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json_encrypt');
     }
-    public function showEventBooked(Request $request, UtilityController $utilityController, AESController $aesController){
-        $listBooked = app()->make(ThirdPartyController::class)->pyxisAPI([
+    public function showEventsList(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
+        $eventList = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'eventgroup', 'startdate'], ['id', 'event_id', 'event_name', 'event_group', 'start_date'], false, null, true);
+        if($eventList['status'] == 'error'){
+            return $utilityController->getView($request, $aesController, '', ['data'=>$eventList['message']], 'json_encrypt', $eventList['statusCode']);
+        }
+        return $utilityController->getView($request, $aesController, '', ['data'=>$eventList['data']], 'json_encrypt');
+    }
+    public function showEventBooked(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
+        $listBooked = $thirdPartyController->pyxisAPI([
             "userid" => "demo@demo.com",
             "groupid" => "XCYTUA",
             "businessid" => "PJLBBS",
             "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount,  paymentdate, notes FROM event_registration",
             "order" => ""
         ],'/JQuery');
+        // if($listBooked['status'] == 'error'){
+        //     return $utilityController->getView($request, $aesController, '', ['message'=>$listBooked['message']], 'json_encrypt');
+        // }
         return $utilityController->getView($request, $aesController, '', ['data'=>$listBooked], 'json_encrypt');
     }
     public function showProfile(Request $request, ServiceAdminController $serviceAdminController, UtilityController $utilityController, AESController $aesController){

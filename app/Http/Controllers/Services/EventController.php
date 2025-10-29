@@ -263,6 +263,8 @@ class EventController extends Controller
             $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
         }
         switch($con){
+            // case 'sync_cache':
+            //     return ['status' => 'success', 'message' => 'success sync event'];
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
             case 'get_total_by_category':
@@ -282,6 +284,19 @@ class EventController extends Controller
                     ];
                 })->filter()->values()->toArray();
                 return ['status' => 'success', 'data' => $result];
+            case 'delete_event':
+                if(!$id){
+                    return ['status' => 'error', 'message' => 'ID event tidak diberikan'];
+                }
+                $jsonData = json_decode(file_get_contents(self::$jsonFileEvent), true) ?? [];
+                $idsToDelete = is_array($id) ? $id : [$id];
+                $filteredData = array_filter($jsonData, function ($item) use ($idsToDelete){
+                    return !in_array($item['eventid'], $idsToDelete);
+                });
+                if(!file_put_contents(self::$jsonFileEvent, json_encode(array_values($filteredData), JSON_PRETTY_PRINT))){
+                    return ['status' => 'error', 'message' => 'Gagal memperbarui file cache event'];
+                }
+                return ['status' => 'success', 'message' => 'Cache event berhasil dihapus'];
         }
         return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle, $pagination);
     }
@@ -427,5 +442,42 @@ class EventController extends Controller
             file_put_contents($counterFile, json_encode(['counter' => str_pad(intval($jsonData['counter']), 7, '0', STR_PAD_LEFT)], JSON_PRETTY_PRINT));
             return $utilityController->getView($request, $aesController, '', ['message'=>'Gagal booking event silahkan kirim ulang'], 'json_encrypt', 500);
         }
+    }
+    public function deleteEvent(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
+        $ids = $request->input('id_events');
+        if(!is_array($ids)){
+            $ids = [$ids];
+        }
+        $validator = Validator::make(['id_events' => $ids], [
+            'id_events' => 'required|array|min:1',
+            'id_events.*' => 'string|max:100',
+        ], [
+            'id_events.required' => 'Event wajib diisi',
+            'id_events.array' => 'Format data tidak valid',
+            'id_events.*.string' => 'ID event harus berupa teks',
+            'id_events.*.max' => 'Panjang ID maksimal 100 karakter',
+        ]);
+        if($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
+        }
+        if(count($ids) > 1){
+            $inClause = implode("','", $ids);
+            $sql = "DELETE FROM event_schedule WHERE eventid IN ('$inClause')";
+        }else{
+            $sql = "DELETE FROM event_schedule WHERE eventid = '{$ids[0]}'";
+        }
+        $deleteAPI = $thirdPartyController->pyxisAPI([
+            "userid" => "demo@demo.com",
+            "groupid" => "XCYTUA",
+            "businessid" => "PJLBBS",
+            "sql" => $sql,
+            "order" => ""
+        ],'/JNonQuery');
+        if($deleteAPI['status'] == 'error'){
+            return $utilityController->getView($request, $aesController, '', ['message'=>$deleteAPI['message']], 'json_encrypt', $deleteAPI['statusCode']);
+        }
+        $this->dataCacheEvent('delete');
+        return $utilityController->getView($request, $aesController, '', ['message'=>'Event berhasil dihapus'], 'json_encrypt');
     }
 }
