@@ -93,8 +93,13 @@ Route::group(['middleware'=>['auth']], function(){
     Route::get('/dashboard', function(Request $request, AESController $aesController){
         return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
     });
-    Route::get('/kelola-event', function(Request $request, AESController $aesController){
-        return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+    Route::group(['prefix'=>'/kelola-event'], function(){
+        Route::get('/', function(Request $request, AESController $aesController){
+            return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+        });
+        Route::get('/tambah', function(Request $request, AESController $aesController){
+            return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
+        });
     });
     Route::get('/event-booked', function(Request $request, AESController $aesController){
         return UtilityController::getView($request, $aesController, '', [], ['cond' => ['view', 'redirect'], 'redirect' => '/' . $request->path()]);
@@ -122,6 +127,8 @@ Route::group(['middleware'=>['auth']], function(){
         Route::post('/dashboard', [AdminController::class, 'showDashboard']);
         Route::group(['prefix'=>'/kelola-event'], function(){
             Route::post('/', [AdminController::class, 'showEventsList']);
+            Route::post('/tambah', [AdminController::class, 'showEventTambah']);
+            Route::post('/tambah-form', [EventController::class, 'tambahEvent']);
             Route::delete('/', [AdminController::class, 'showEventsList']);
         });
         Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);

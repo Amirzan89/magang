@@ -45,6 +45,11 @@ return [
             'root' => storage_path('app/private'),
             'throw' => false,
         ],
+        'events' => [
+            'driver' => 'local',
+            'root' => storage_path('app/events'),
+            'throw' => false,
+        ],
         'admin' => [
             'driver' => 'local',
             'root' => storage_path('app/admin'),

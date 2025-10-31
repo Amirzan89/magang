@@ -21,7 +21,14 @@ class AdminController extends Controller
         return $userAuth;
     }
     public function showDashboard(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
-        $listEvents = $eventController->dataCacheEvent(null, null, 5, ['id', 'eventid', 'eventname', 'startdate', 'nama_lokasi', 'link_lokasi'], ['id', 'event_id', 'event_name', 'start_date', 'nama_lokasi', 'link_lokasi'], true, null, true);
+        $listEvents = $eventController->dataCacheEvent(null, [
+            'id' => null,
+            'limit' => 5,
+            'col' => ['id', 'eventid', 'eventname', 'startdate', 'nama_lokasi', 'link_lokasi'],
+            'alias' => ['id', 'event_id', 'event_name', 'start_date', 'nama_lokasi', 'link_lokasi'],
+            'formatDate' => true,
+            'shuffle' => true
+        ]);
         if($listEvents['status'] == 'error'){
             return $utilityController->getView($request, $aesController, '', ['message'=>$listEvents['message']], 'json_encrypt', $listEvents['statusCode']);
         }
@@ -43,8 +50,22 @@ class AdminController extends Controller
         ];
         return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json_encrypt');
     }
+    public function showEventTambah(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
+        $categoryData = $eventController->dataCacheEventGroup(['eventgroup', 'eventgroupname'], ['value', 'name'], null, false);
+        if($categoryData['status'] == 'error'){
+            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
+        }
+        return $utilityController->getView($request, $aesController, '', ['data'=>$categoryData['data']], 'json_encrypt');
+    }
     public function showEventsList(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
-        $eventList = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'eventgroup', 'startdate'], ['id', 'event_id', 'event_name', 'event_group', 'start_date'], false, null, true);
+        $eventList = $eventController->dataCacheEvent(null, [
+            'id' => null,
+            'limit' => null,
+            'col' => ['id', 'eventid', 'eventname', 'eventgroup', 'startdate'],
+            'alias' => ['id', 'event_id', 'event_name', 'event_group', 'start_date'],
+            'formatDate' => false,
+            'shuffle' => true
+        ]);
         if($eventList['status'] == 'error'){
             return $utilityController->getView($request, $aesController, '', ['data'=>$eventList['message']], 'json_encrypt', $eventList['statusCode']);
         }

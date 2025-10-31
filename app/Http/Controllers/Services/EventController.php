@@ -8,20 +8,24 @@ use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Throwable;
 use Error;
 class EventController extends Controller
 {
     private static $jsonFileEvent;
     private static $jsonFileEventGroup;
+    private static $jsonFileEventsCounter;
     private static $jsonFileEventBookingCounter;
     public function __construct(){
         self::$jsonFileEvent = storage_path('app/cache/events.json');
         self::$jsonFileEventGroup = storage_path('app/cache/event-groups.json');
+        self::$jsonFileEventsCounter = storage_path('app/cache/events_counter.json');
         self::$jsonFileEventBookingCounter = storage_path('app/cache/event_booking_counter.json');
     }
-    private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false, $pagination = null){
+    private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $shuffle = false, $searchFilter = null, $pagination = null){
         if(!is_null($id) && !empty($id) && $id){
             $found = false;
             foreach($inp as &$item){
@@ -226,9 +230,18 @@ class EventController extends Controller
             $jsonData = $updateFileCache();
         }
         $result = $jsonData;
-        return self::handleCache($result, null, null, $col, $alias, false, $searchFilter, false, $pagination);
+        return self::handleCache($result, null, null, $col, $alias, false, false, $searchFilter, $pagination);
     }
-    public function dataCacheEvent($con = null, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $searchFilter = null, $shuffle = false, $pagination = null){
+    public function dataCacheEvent($con = null, $metaData = null, $inpData = null, $searchFilter = null, $pagination = null){
+        $defaults = [
+            'id' => null,
+            'limit' => null,
+            'col' => null,
+            'alias' => null,
+            'formatDate' => false,
+            'shuffle' => false
+        ];
+        $metaData = is_array($metaData) ? array_merge($defaults, $metaData) : $defaults;
         $directory = storage_path('app/cache');
         if(!file_exists($directory)){
             mkdir($directory, 0755, true);
@@ -263,8 +276,9 @@ class EventController extends Controller
             $item['is_free'] = $item['price'] == 0 || $item['price'] === "0.0000";
         }
         switch($con){
-            // case 'sync_cache':
-            //     return ['status' => 'success', 'message' => 'success sync event'];
+            case 'sync_cache':
+                $updateFileCache();
+                return ['status' => 'success', 'message' => 'Sinkronisasi cache event berhasil'];
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
             case 'get_total_by_category':
@@ -284,23 +298,23 @@ class EventController extends Controller
                     ];
                 })->filter()->values()->toArray();
                 return ['status' => 'success', 'data' => $result];
+            case 'get_latest_id':
+                $last = collect($jsonData)->pluck('eventid')->map(fn($id) => (int) str_replace('EVT', '', $id))->max();
+                return $last ?? 0;
+            case 'tambah':
+                file_put_contents(self::$jsonFileEvent, json_encode(array_merge($jsonData, [$inpData]), JSON_PRETTY_PRINT));
+                return ['status' => 'success', 'message' => 'Cache event berhasil diperbarui'];
             case 'delete_event':
-                if(!$id){
+                if(!$metaData['id']){
                     return ['status' => 'error', 'message' => 'ID event tidak diberikan'];
                 }
-                $jsonData = json_decode(file_get_contents(self::$jsonFileEvent), true) ?? [];
-                $idsToDelete = is_array($id) ? $id : [$id];
-                $filteredData = array_filter($jsonData, function ($item) use ($idsToDelete){
-                    return !in_array($item['eventid'], $idsToDelete);
-                });
-                if(!file_put_contents(self::$jsonFileEvent, json_encode(array_values($filteredData), JSON_PRETTY_PRINT))){
-                    return ['status' => 'error', 'message' => 'Gagal memperbarui file cache event'];
-                }
+                $idsToDelete = is_array($metaData['id']) ? $metaData['id'] : [$metaData['id']];
+                $filtered = array_filter($jsonData, fn($item) => !in_array($item['eventid'], $idsToDelete));
+                file_put_contents(self::$jsonFileEvent, json_encode(array_values($filtered), JSON_PRETTY_PRINT));
                 return ['status' => 'success', 'message' => 'Cache event berhasil dihapus'];
         }
-        return self::handleCache($result, $id, $limit, $col, $alias, $formatDate, $searchFilter, $shuffle, $pagination);
+        return self::handleCache($result, $metaData['id'], $metaData['limit'], $metaData['col'], $metaData['alias'], $metaData['formatDate'], $metaData['shuffle'], $searchFilter, $pagination);
     }
-
     public function searchEvent(Request $request, UtilityController $utilityController, AESController $aesController){
         $categoryData = $this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null);
         if($categoryData['status'] === 'error'){
@@ -309,7 +323,7 @@ class EventController extends Controller
         $categories = collect($categoryData['data'])->pluck('event_group')->implode(',');
         $validator = Validator::make($request->query(), [
             'find' => 'nullable|string|max:100',
-            "f_category.*' => 'nullable|string|in:$categories",
+            'f_category.*' => "nullable|string|in:$categories",
             'f_sr_date' => 'nullable|date',
             'f_er_date' => 'nullable|date',
             'f_pay' => 'nullable|string|in:free,pay,all',
@@ -346,7 +360,23 @@ class EventController extends Controller
             // 'price' => $request->query('f_price'),
             'is_free' => $request->query('f_pay'),
         ];
-        $searchData = $this->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1', 'category'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img', 'category'], true, ['flow' => $request->query('flow', 'search-filter'), 'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']], 'filters' => $filters], false, ['next_page' => $request->query('next_page'), 'limit' => $request->query('limit') ? $request->query('limit') : 5, 'column_id' => 'eventid', 'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time']);
+        $searchData = $this->dataCacheEvent(null, [
+            'id' => null,
+            'limit' => null,
+            'col' => ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1', 'category'],
+            'alias' => ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img', 'category'],
+            'formatDate' => true,
+            'shuffle' => false
+        ], null, [
+            'flow' => $request->query('flow', 'search-filter'),
+            'search' => ['keywoard' => $request->query('find'), 'fields' => ['eventname']],
+            'filters' => $filters
+        ], [
+            'next_page' => $request->query('next_page'),
+            'limit' => $request->query('limit') ? $request->query('limit') : 5,
+            'column_id' => 'eventid',
+            'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time'
+        ]);
         if($searchData['status'] === 'error'){
             $codeRes = $searchData['statusCode'];
             unset($searchData['statusCode']);
@@ -364,16 +394,16 @@ class EventController extends Controller
             'event_id' => 'required|string',
             'qty' => 'required|integer|min:1',
         ], [
-            'nama.required' => 'Nama wajib diisi',
+            'nama.required' => 'Nama harus diisi',
             'nama.max' => 'Nama maksimal 100 karakter',
-            'gender.required' => 'Jenis kelamin wajib diisi',
+            'gender.required' => 'Jenis kelamin harus diisi',
             'gender.in' => 'Jenis kelamin harus M atau F',
-            'mobileno.required' => 'Nomor telepon wajib diisi',
-            'email.required' => 'Email wajib diisi',
+            'mobileno.required' => 'Nomor telepon harus diisi',
+            'email.required' => 'Email harus diisi',
             'email.email' => 'Format email tidak valid',
-            'event_group.required' => 'Event group wajib ada',
-            'event_id.required' => 'Event ID wajib ada',
-            'qty.required' => 'Jumlah tiket wajib diisi',
+            'event_group.required' => 'Event group harus ada',
+            'event_id.required' => 'Event ID harus ada',
+            'qty.required' => 'Jumlah tiket harus diisi',
             'qty.min' => 'Jumlah tiket minimal 1',
         ]);
         if($validator->fails()){
@@ -443,6 +473,119 @@ class EventController extends Controller
             return $utilityController->getView($request, $aesController, '', ['message'=>'Gagal booking event silahkan kirim ulang'], 'json_encrypt', 500);
         }
     }
+    public function tambahEvent(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
+        $categoryData = $this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null);
+        if($categoryData['status'] === 'error'){
+            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
+        }
+        $categories = collect($categoryData['data'])->pluck('event_group')->implode(',');
+        $validator = Validator::make($request->all(), [
+            'event_name' => 'required|string|max:50',
+            'event_description' => 'required|string|max:300',
+            'event_group' => "required|string|in:$categories",
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date', ///////bug aneh
+            'quota' => 'required|numeric|min:1',
+            'price' => 'required|numeric|min:0',
+            'inclusion' => 'required|string|max:255',
+            'foto' => 'required|array|max:9',
+        ], [
+            'event_name.required' => 'Nama event harus diisi',
+            'event_name.string' => 'Nama event harus berupa teks',
+            'event_name.max' => 'Nama event maksimal 50 karakter',
+            'event_description.required' => 'Deskripsi event harus diisi',
+            'event_description.string' => 'Deskripsi event harus berupa teks',
+            'event_description.max' => 'Deskripsi event maksimal 300 karakter',
+            'event_group.required' => 'Kategori harus dipilih',
+            'event_group.string' => 'Kategori event harus berupa teks',
+            'event_group.in' => 'Kategori Event Invalid',
+            'start_date.required' => 'Tanggal mulai event harus diisi',
+            'start_date.date' => 'Tanggal mulai event harus tanggal',
+            'end_date.required' => 'Tanggal berakhir event harus diisi',
+            'end_date.date' => 'Tanggal berakhir harus tanggal',
+            'end_date.after_or_equal' => 'Tanggal berakhir tidak boleh sebelum tanggal mulai',
+            'quota.required' => 'Tanggal mulai event harus diisi',
+            'quota.numeric' => 'Kuota event harus berupa angka',
+            'quota.min' => 'Kuota event minimal 1',
+            'price.required' => 'Harga tiket harus diisi',
+            'price.numeric' => 'Harga tiket harus berupa angka',
+            'price.min' => 'Nama event minimal 0',
+            'inclusion.required' => 'Inklusi harus diisi',
+            'inclusion.string' => 'Inklusi harus berupa teks',
+            'inclusion.max' => 'Inklusi maksimal 255 karakter',
+            'foto.required' => 'Foto event harus diisi',
+            'foto.array' => 'Foto event harus array image',
+            'foto.max' => 'Foto event maksimal 9',
+        ]);
+        if($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
+        }
+        $genEventId = sprintf("EVT%03d", $this->dataCacheEvent('get_latest_id') + 1);
+        $imageColumns = [];
+        $foto = $utilityController->base64File($request, ['foto']);
+        for($i = 0; $i < 9; $i++){
+            $item = $foto[$i];
+            if($item instanceof \Illuminate\Http\UploadedFile){
+                if(!in_array($item->extension(), ['jpeg', 'png', 'jpg'])){
+                    return $utilityController->getView($request, $aesController, '', ['message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'], 'json_encrypt', 400);
+                }
+                $fotoName = $item->hashName();
+                Storage::disk('events')->put($fotoName, file_get_contents($item));
+                $imageColumns[] = $fotoName;
+            }else if($item && isset($item['url'])){
+                $imageColumns[] = $item['url'];
+            }else{
+                $imageColumns[] = '-';
+            }
+        }
+        $sql = sprintf("INSERT INTO event_schedule (keybusinessgroup, keyregistered, eventgroup, eventid, eventname, eventdescription, startdate, enddate, quota, price, inclusion, imageicon_1, imageicon_2, imageicon_3, imageicon_4, imageicon_5, imageicon_6, imageicon_7, imageicon_8, imageicon_9) VALUES ('I5RLGI', '5EA9I2', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s',
+        '%s','%s','%s','%s','%s','%s','%s','%s','%s')",
+            $request->event_group,
+            $genEventId,
+            addslashes($request->input('event_name')),
+            addslashes($request->input('event_description')),
+            addslashes($request->input('start_date')),
+            addslashes($request->input('end_date')),
+            addslashes($request->input('quota')),
+            addslashes($request->input('price')),
+            addslashes($request->input('inclusion')),
+            ...$imageColumns
+        );
+        $insertAPI = $thirdPartyController->pyxisAPI([
+            "userid" => "demo@demo.com",
+            "groupid" => "XCYTUA",
+            "businessid" => "PJLBBS",
+            "sql" => $sql,
+            "order" => ""
+        ], '/JNonQuery');
+        // if($insertAPI['status'] == 'error'){
+        //     return $utilityController->getView($request, $aesController, '', ['message' => $insertAPI['message']], 'json_encrypt', $insertAPI['statusCode']);
+        // }
+        $this->dataCacheEvent('tambah', null, [
+            'keybusinessgroup' => 'I5RLGI',
+            'keyregistered' => '5EA9I2',
+            'eventgroup' => $request->event_group,
+            'eventid' => $genEventId,
+            'eventname' => $request->event_name,
+            'eventdescription' => $request->event_description,
+            'startdate' => $request->start_date,
+            'enddate' => $request->end_date,
+            'quota' => $request->quota,
+            'price' => $request->price,
+            'inclusion' => $request->inclusion,
+            'imageicon_1' => $imageColumns[0],
+            'imageicon_2' => $imageColumns[1],
+            'imageicon_3' => $imageColumns[2],
+            'imageicon_4' => $imageColumns[3],
+            'imageicon_5' => $imageColumns[4],
+            'imageicon_6' => $imageColumns[5],
+            'imageicon_7' => $imageColumns[6],
+            'imageicon_8' => $imageColumns[7],
+            'imageicon_9' => $imageColumns[8],
+        ]);
+        return $utilityController->getView($request, $aesController, '', ['message'=>'Event berhasil ditambahkan'], 'json_encrypt');
+    }
     public function deleteEvent(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
         $ids = $request->input('id_events');
         if(!is_array($ids)){
@@ -452,7 +595,7 @@ class EventController extends Controller
             'id_events' => 'required|array|min:1',
             'id_events.*' => 'string|max:100',
         ], [
-            'id_events.required' => 'Event wajib diisi',
+            'id_events.required' => 'Event harus diisi',
             'id_events.array' => 'Format data tidak valid',
             'id_events.*.string' => 'ID event harus berupa teks',
             'id_events.*.max' => 'Panjang ID maksimal 100 karakter',

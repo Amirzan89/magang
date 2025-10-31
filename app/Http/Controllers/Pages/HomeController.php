@@ -9,12 +9,26 @@ use Illuminate\Support\Facades\Validator;
 class HomeController extends Controller
 {
     public function showHome(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
-        $upcoming_events = $eventController->dataCacheEvent(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true);
+        $upcoming_events = $eventController->dataCacheEvent(null, [
+            'id' => null,
+            'limit' => 6,
+            'col' => ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'],
+            'alias' => ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'],
+            'formatDate' => true,
+            'shuffle' => true
+        ]);
         if($upcoming_events['status'] == 'error'){
             return $utilityController->getView($request, $aesController, '', ['message'=>$upcoming_events['message']], 'json_encrypt', $upcoming_events['statusCode']);
         }
         $upcoming_events = $upcoming_events['data'];
-        $past_events = $eventController->dataCacheEvent(null, null, 4, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true);
+        $past_events = $eventController->dataCacheEvent(null, [
+            'id' => null,
+            'limit' => 4,
+            'col' => ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'],
+            'alias' => ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'],
+            'formatDate' => true,
+            'shuffle' => true
+        ]);
         if($past_events['status'] == 'error'){
             return $utilityController->getView($request, $aesController, '', ['message'=>$past_events['message']], 'json_encrypt', $past_events['statusCode']);
         }
@@ -125,7 +139,19 @@ class HomeController extends Controller
             $firstError = collect($validator->errors()->all())->first();
             return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
         }
-        $allEvent = $eventController->dataCacheEvent(null, null, null, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true, ['next_page' => $request->query('next_page'), 'limit' => $request->query('limit') ? $request->query('limit') : 5, 'column_id' => 'eventid', 'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time']);
+        $allEvent = $eventController->dataCacheEvent(null, [
+            'id' => null,
+            'limit' => null,
+            'col' => ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'],
+            'alias' => ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'],
+            'formatDate' => true,
+            'shuffle' => true
+        ], null, [
+            'next_page' => $request->query('next_page'),
+            'limit' => $request->query('limit') ? $request->query('limit') : 5,
+            'column_id' => 'eventid',
+            'is_first_time' => $request->hasHeader('X-Pagination-From') && $request->header('X-Pagination-From') === 'first-time'
+        ]);
         if($allEvent['status'] == 'error'){
             return $utilityController->getView($request, $aesController, '', ['message'=>$allEvent['message']], 'json_encrypt', $allEvent['statusCode']);
         }
@@ -139,12 +165,26 @@ class HomeController extends Controller
         return $utilityController->getView($request, $aesController, '', ['data'=>$categoryData['data']], 'json_encrypt');
     }
     public function showEventDetail(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController, $id){
-        $eventDetail = $eventController->dataCacheEvent(null, $id, null, ['id', 'eventgroup', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'price', 'is_free' , 'link_event', 'location_name', 'location_link', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'], ['id', 'event_group', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'price', 'is_free', 'link_event', 'location_name', 'location_link', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'], true, null, false);
+        $eventDetail = $eventController->dataCacheEvent(null, [
+            'id' => $id,
+            'limit' => null,
+            'col' => ['id', 'eventgroup', 'eventid', 'eventname', 'eventdescription', 'eventdetail', 'startdate', 'enddate', 'price', 'is_free' , 'link_event', 'location_name', 'location_link', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'category'],
+            'alias' => ['id', 'event_group', 'event_id', 'event_name', 'event_description', 'event_detail', 'start_date', 'end_date', 'price', 'is_free', 'link_event', 'location_name', 'location_link', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'img', 'category'],
+            'formatDate' => true,
+            'shuffle' => false
+        ]);
         if($eventDetail['status'] == 'error'){
             return $utilityController->getView($request, $aesController, '', ['message'=>$eventDetail['message']], 'json_encrypt', $eventDetail['statusCode']);
         }
         $eventDetail = $eventDetail['data'];
-        $allEvent = $eventController->dataCacheEvent(null, null, 6, ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'], ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'], true, null, true);
+        $allEvent = $eventController->dataCacheEvent(null, [
+            'id' => null,
+            'limit' => 6,
+            'col' => ['id', 'eventid', 'eventname', 'startdate', 'is_free', 'imageicon_1'],
+            'alias' => ['id', 'event_id', 'event_name', 'start_date', 'is_free', 'img'],
+            'formatDate' => true,
+            'shuffle' => true
+        ]);
         if($allEvent['status'] == 'error'){
             return $utilityController->getView($request, $aesController, '', ['message'=>$allEvent['message']], 'json_encrypt', $allEvent['statusCode']);
         }

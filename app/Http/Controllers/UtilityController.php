@@ -139,8 +139,8 @@ class UtilityController extends Controller
         ];
         return $map[$mime] ?? 'bin';
     }
-    public function base64File(Request $request): UploadedFile|array|null {
-        $input = $request->all();
+    public function base64File(Request $request, $inpFiles = []): UploadedFile|array|null {
+        $input = $inpFiles ? $request->only($inpFiles) : $request->all();
         $uploadedFiles = [];
         $makeUploadedFile = function (string $key, array $fileItem): UploadedFile {
             $meta = $fileItem['meta'];
@@ -155,10 +155,21 @@ class UtilityController extends Controller
             return new UploadedFile($tmpPath, $meta['name'] ?? basename($tmpPath), $meta['type'] ?? 'application/octet-stream', $meta['size'] ?? null, true);
         };
         foreach($input as $key => $value){
-            if(is_array($value) && isset($value['data'], $value['meta'])){
+            if(is_null($value) || !is_array($value) || empty($value)){
+                $uploadedFiles[$key] = $value;
+                continue;
+            }
+            if(isset($value['data'], $value['meta'])){
                 $uploadedFiles[$key] = $makeUploadedFile($key, $value);
-            }else if(is_array($value) && isset($value[0]) && is_array($value[0]) && isset($value[0]['data'], $value[0]['meta'])){
+            }else if(isset($value[0]) && is_array($value[0]) && isset($value[0]['data'], $value[0]['meta'])){
                 foreach($value as $i => $fileItem){
+                    if(!isset($uploadedFiles[$key]) || !is_array($uploadedFiles[$key])){
+                        $uploadedFiles[$key] = [];
+                    }
+                    if(!is_array($fileItem) || !isset($fileItem['data'], $fileItem['meta'])){
+                        $uploadedFiles[$key][$i] = $value;
+                        continue;
+                    }
                     $uploadedFiles[$key][$i] = $makeUploadedFile($key . "_{$i}", $fileItem);
                 }
             }
