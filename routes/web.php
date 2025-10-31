@@ -129,6 +129,8 @@ Route::group(['middleware'=>['auth']], function(){
             Route::post('/', [AdminController::class, 'showEventsList']);
             Route::post('/tambah', [AdminController::class, 'showEventTambah']);
             Route::post('/tambah-form', [EventController::class, 'tambahEvent']);
+            Route::post('/detail/{id}', [AdminController::class, 'showEventAdminDetail'])->withoutMiddleware(['auth']);
+            Route::put('/update-form', [EventController::class, 'updateEvent']);
             Route::delete('/', [AdminController::class, 'showEventsList']);
         });
         Route::post('/event-booked', [AdminController::class, 'showEVentBooked']);

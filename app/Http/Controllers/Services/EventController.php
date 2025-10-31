@@ -25,6 +25,24 @@ class EventController extends Controller
         self::$jsonFileEventsCounter = storage_path('app/cache/events_counter.json');
         self::$jsonFileEventBookingCounter = storage_path('app/cache/event_booking_counter.json');
     }
+    public static function getFotoEvent($nameFile){
+        $filePath = storage_path('app/events/' . $nameFile);
+        if(!file_exists($filePath) || !is_file($filePath)){
+            return ['status'=>'error','message'=>'Foto event tidak ditemukan','statusCode'=>404];
+        }
+        $fileContent = file_get_contents($filePath);
+        return [
+            'status' => 'success',
+            'data' => [
+                'data' => base64_encode($fileContent),
+                'meta' => [
+                    'filename' => 'default.jpg',
+                    'size' => filesize($filePath),
+                    'type' => finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $fileContent),
+                ]
+            ]
+        ];
+    }
     private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $shuffle = false, $searchFilter = null, $pagination = null){
         if(!is_null($id) && !empty($id) && $id){
             $found = false;
@@ -279,6 +297,10 @@ class EventController extends Controller
             case 'sync_cache':
                 $updateFileCache();
                 return ['status' => 'success', 'message' => 'Sinkronisasi cache event berhasil'];
+            case 'check_id':
+                return ['status' => 'success', 'data' => collect($jsonData)->contains(function($item) use ($inpData){
+                    return isset($item['eventid']) && $item['eventid'] === $inpData['eventid'];
+                })];
             case 'get_total':
                 return ['status' => 'success', 'data' => count($jsonData)];
             case 'get_total_by_category':
@@ -287,7 +309,7 @@ class EventController extends Controller
                     return $categoryData;
                 }
                 $categoryData = $categoryData['data'];
-                $result = collect($jsonData)->groupBy('eventgroup')->map(function ($items, $key) use ($categoryData){
+                $result = collect($jsonData)->groupBy('eventgroup')->map(function($items, $key) use ($categoryData){
                     $match = collect($categoryData)->firstWhere('event_group', $key);
                     if(!$match){
                         return null;
@@ -303,6 +325,25 @@ class EventController extends Controller
                 return $last ?? 0;
             case 'tambah':
                 file_put_contents(self::$jsonFileEvent, json_encode(array_merge($jsonData, [$inpData]), JSON_PRETTY_PRINT));
+                return ['status' => 'success', 'message' => 'Cache event berhasil diperbarui'];
+            case 'update':
+                if(!isset($inpData['eventid'])){
+                    return ['status' => 'error', 'message' => 'eventid tidak ditemukan di data input'];
+                }
+                $found = false;
+                foreach($jsonData as &$item){
+                    if(isset($item['eventid']) && $item['eventid'] === $inpData['eventid']){
+                        $item = array_merge($item, $inpData);
+                        $found = true;
+                        break;
+                    }
+                }
+                if(!$found){
+                    return ['status' => 'error', 'message' => 'Gagal memperbarui cache event'];
+                }
+                if(!file_put_contents(self::$jsonFileEvent, json_encode($jsonData, JSON_PRETTY_PRINT))){
+                    return ['status' => 'error', 'message' => 'Gagal memperbarui cache event'];
+                }
                 return ['status' => 'success', 'message' => 'Cache event berhasil diperbarui'];
             case 'delete_event':
                 if(!$metaData['id']){
@@ -585,6 +626,140 @@ class EventController extends Controller
             'imageicon_9' => $imageColumns[8],
         ]);
         return $utilityController->getView($request, $aesController, '', ['message'=>'Event berhasil ditambahkan'], 'json_encrypt');
+    }
+    public function updateEvent(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
+        $categoryData = $this->dataCacheEventGroup(['id', 'eventgroup', 'eventgroupname', 'imageicon', 'active'], ['id', 'event_group', 'event_group_name', 'image_icon', 'active'], null);
+        if($categoryData['status'] === 'error'){
+            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
+        }
+        $categories = collect($categoryData['data'])->pluck('event_group')->implode(',');
+        $validator = Validator::make($request->all(), [
+            'event_id' => 'required|string|max:50',
+            'event_name' => 'required|string|max:50',
+            'event_description' => 'required|string|max:300',
+            'event_group' => "required|string|in:$categories",
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date', ///////bug aneh
+            'quota' => 'required|numeric|min:1',
+            'price' => 'required|numeric|min:0',
+            'inclusion' => 'required|string|max:255',
+            'foto' => 'required|array|max:9',
+        ], [
+            'event_name.required' => 'Nama event harus diisi',
+            'event_name.string' => 'Nama event harus berupa teks',
+            'event_name.max' => 'Nama event maksimal 50 karakter',
+            'event_description.required' => 'Deskripsi event harus diisi',
+            'event_description.string' => 'Deskripsi event harus berupa teks',
+            'event_description.max' => 'Deskripsi event maksimal 300 karakter',
+            'event_group.required' => 'Kategori harus dipilih',
+            'event_group.string' => 'Kategori event harus berupa teks',
+            'event_group.in' => 'Kategori Event Invalid',
+            'start_date.required' => 'Tanggal mulai event harus diisi',
+            'start_date.date' => 'Tanggal mulai event harus tanggal',
+            'end_date.required' => 'Tanggal berakhir event harus diisi',
+            'end_date.date' => 'Tanggal berakhir harus tanggal',
+            'end_date.after_or_equal' => 'Tanggal berakhir tidak boleh sebelum tanggal mulai',
+            'quota.required' => 'Tanggal mulai event harus diisi',
+            'quota.numeric' => 'Kuota event harus berupa angka',
+            'quota.min' => 'Kuota event minimal 1',
+            'price.required' => 'Harga tiket harus diisi',
+            'price.numeric' => 'Harga tiket harus berupa angka',
+            'price.min' => 'Nama event minimal 0',
+            'inclusion.required' => 'Inklusi harus diisi',
+            'inclusion.string' => 'Inklusi harus berupa teks',
+            'inclusion.max' => 'Inklusi maksimal 255 karakter',
+            'foto.required' => 'Foto event harus diisi',
+            'foto.array' => 'Foto event harus array image',
+            'foto.max' => 'Foto event maksimal 9',
+        ]);
+        if($validator->fails()){
+            $firstError = collect($validator->errors()->all())->first();
+            return $utilityController->getView($request, $aesController, '', ['message'=>$firstError ?? 'Terjadi kesalahan validasi parameter.'], 'json_encrypt', 422);
+        }
+        // $checkEventId = $thirdPartyController->pyxisAPI([
+        //     "userid" => "demo@demo.com",
+        //     "groupid" => "XCYTUA",
+        //     "businessid" => "PJLBBS",
+        //     "sql" => "SELECT 'event_id' FROM event_schedule WHERE event_id = " . $request->input('event_id'),
+        //     "order" => ""
+        // ], '/JNonQuery');
+        // if($checkEventId['message'] == 'error'){
+        //     return $utilityController->getView($request, $aesController, '', ['message'=>'Data event tidak ditemukan'], 'json_encrypt', 404);
+        // }
+        $imageColumns = [];
+        $foto = $utilityController->base64File($request, ['foto']);
+        for($i = 0; $i < 9; $i++){
+            $item = $foto[$i];
+            if($item instanceof \Illuminate\Http\UploadedFile){
+                if(!in_array($item->extension(), ['jpeg', 'png', 'jpg'])){
+                    return $utilityController->getView($request, $aesController, '', ['message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'], 'json_encrypt', 400);
+                }
+                $fotoName = $item->hashName();
+                Storage::disk('events')->put($fotoName, file_get_contents($item));
+                $imageColumns[] = $fotoName;
+            }else if($item && isset($item['url'])){
+                $imageColumns[] = $item['url'];
+            }else{
+                $imageColumns[] = '-';
+            }
+        }
+        $sql = sprintf(
+        "UPDATE event_schedule SET keybusinessgroup='I5RLGI', keyregistered='5EA9I2', eventgroup='%s', eventname='%s', eventdescription='%s', startdate='%s', enddate='%s', quota='%s', price='%s', inclusion='%s', imageicon_1='%s', imageicon_2='%s', imageicon_3='%s', imageicon_4='%s', imageicon_5='%s', imageicon_6='%s', imageicon_7='%s', imageicon_8='%s' imageicon_9='%s' WHERE eventid='%s'",
+            addslashes($request->event_group),
+            addslashes($request->event_name),
+            addslashes($request->event_description),
+            addslashes($request->start_date),
+            addslashes($request->end_date),
+            addslashes($request->quota),
+            addslashes($request->price),
+            addslashes($request->inclusion),
+            $imageColumns[0],
+            $imageColumns[1],
+            $imageColumns[2],
+            $imageColumns[3],
+            $imageColumns[4],
+            $imageColumns[5],
+            $imageColumns[6],
+            $imageColumns[7],
+            $imageColumns[8],
+            addslashes($request->event_id)
+        );
+        $updateAPI = $thirdPartyController->pyxisAPI([
+            "userid" => "demo@demo.com",
+            "groupid" => "XCYTUA",
+            "businessid" => "PJLBBS",
+            "sql" => $sql,
+            "order" => ""
+        ], '/JNonQuery');
+        // if($updateAPI['status'] == 'error'){
+        //     return $utilityController->getView($request, $aesController, '', ['message' => $insertAPI['message']], 'json_encrypt', $insertAPI['statusCode']);
+        // }
+        $updatedCache = $this->dataCacheEvent('update', null, [
+            'eventid' => $request->input('event_id'),
+            'keybusinessgroup' => 'I5RLGI',
+            'keyregistered' => '5EA9I2',
+            'eventgroup' => $request->event_group,
+            'eventname' => $request->event_name,
+            'eventdescription' => $request->event_description,
+            'startdate' => $request->start_date,
+            'enddate' => $request->end_date,
+            'quota' => $request->quota,
+            'price' => $request->price,
+            'inclusion' => $request->inclusion,
+            'imageicon_1' => $imageColumns[0],
+            'imageicon_2' => $imageColumns[1],
+            'imageicon_3' => $imageColumns[2],
+            'imageicon_4' => $imageColumns[3],
+            'imageicon_5' => $imageColumns[4],
+            'imageicon_6' => $imageColumns[5],
+            'imageicon_7' => $imageColumns[6],
+            'imageicon_8' => $imageColumns[7],
+            'imageicon_9' => $imageColumns[8],
+        ]);
+        if($updatedCache['status'] == 'error'){
+            $this->dataCacheEvent('sync_cache');
+        }
+        return $utilityController->getView($request, $aesController, '', ['message'=>'Event berhasil diperbarui'], 'json_encrypt');
     }
     public function deleteEvent(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
         $ids = $request->input('id_events');

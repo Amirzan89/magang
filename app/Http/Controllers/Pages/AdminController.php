@@ -50,12 +50,18 @@ class AdminController extends Controller
         ];
         return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json_encrypt');
     }
-    public function showEventTambah(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
-        $categoryData = $eventController->dataCacheEventGroup(['eventgroup', 'eventgroupname'], ['value', 'name'], null, false);
-        if($categoryData['status'] == 'error'){
-            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
-        }
-        return $utilityController->getView($request, $aesController, '', ['data'=>$categoryData['data']], 'json_encrypt');
+    public function showEventBooked(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
+        $listBooked = $thirdPartyController->pyxisAPI([
+            "userid" => "demo@demo.com",
+            "groupid" => "XCYTUA",
+            "businessid" => "PJLBBS",
+            "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount,  paymentdate, notes FROM event_registration",
+            "order" => ""
+        ],'/JQuery');
+        // if($listBooked['status'] == 'error'){
+        //     return $utilityController->getView($request, $aesController, '', ['message'=>$listBooked['message']], 'json_encrypt');
+        // }
+        return $utilityController->getView($request, $aesController, '', ['data'=>$listBooked], 'json_encrypt');
     }
     public function showEventsList(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
         $eventList = $eventController->dataCacheEvent(null, [
@@ -71,18 +77,45 @@ class AdminController extends Controller
         }
         return $utilityController->getView($request, $aesController, '', ['data'=>$eventList['data']], 'json_encrypt');
     }
-    public function showEventBooked(Request $request, ThirdPartyController $thirdPartyController, UtilityController $utilityController, AESController $aesController){
-        $listBooked = $thirdPartyController->pyxisAPI([
-            "userid" => "demo@demo.com",
-            "groupid" => "XCYTUA",
-            "businessid" => "PJLBBS",
-            "sql" => "SELECT id, keybusinessgroup, keyregistered, eventgroup, eventid, registrationstatus, registrationno, registrationdate, registrationname, email, mobileno, gender, qty, paymenttype, paymentid, paymentamount,  paymentdate, notes FROM event_registration",
-            "order" => ""
-        ],'/JQuery');
-        // if($listBooked['status'] == 'error'){
-        //     return $utilityController->getView($request, $aesController, '', ['message'=>$listBooked['message']], 'json_encrypt');
-        // }
-        return $utilityController->getView($request, $aesController, '', ['data'=>$listBooked], 'json_encrypt');
+    public function showEventTambah(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController){
+        $categoryData = $eventController->dataCacheEventGroup(['eventgroup', 'eventgroupname'], ['value', 'name'], null, false);
+        if($categoryData['status'] == 'error'){
+            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
+        }
+        return $utilityController->getView($request, $aesController, '', ['data'=>$categoryData['data']], 'json_encrypt');
+    }
+    public function showEventAdminDetail(Request $request, EventController $eventController, UtilityController $utilityController, AESController $aesController, $id){
+        $categoryData = $eventController->dataCacheEventGroup(['eventgroup', 'eventgroupname'], ['value', 'name'], null, false);
+        if($categoryData['status'] == 'error'){
+            return $utilityController->getView($request, $aesController, '', ['message'=>$categoryData['message']], 'json_encrypt', $categoryData['statusCode']);
+        }
+        $eventDetail = $eventController->dataCacheEvent(null, [
+            'id' => $id,
+            'limit' => null,
+            'col' => ['id', 'eventid', 'eventgroup', 'eventname', 'eventdescription', 'startdate', 'enddate', 'price', 'quota', 'inclusion', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'imageicon_9'],
+            'alias' => ['id', 'event_id', 'event_group', 'event_name', 'event_description', 'start_date', 'end_date', 'price', 'quota', 'inclusion', 'imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'imageicon_9'],
+        ]);
+        if($eventDetail['status'] == 'error'){
+            return $utilityController->getView($request, $aesController, '', ['data'=>$eventDetail['message']], 'json_encrypt', $eventDetail['statusCode']);
+        }
+        $eventDetail = $eventDetail['data'];
+        $foto = [];
+        $imgKeys = ['imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'imageicon_9'];
+        foreach($imgKeys as $key){
+            if(!empty($eventDetail[$key]) && !is_null($eventDetail[$key])){
+                $result = $eventController->getFotoEvent($eventDetail[$key]);
+                $foto[] = $result['status'] === 'success' ? $result['data'] : null;
+            }else{
+                $foto[] = null;
+            }
+            unset($eventDetail[$key]);
+        }
+        $eventDetail['foto'] = $foto;
+        $dataShow = [
+            'category' => $categoryData['data'],
+            'event' => $eventDetail,
+        ];
+        return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json');
     }
     public function showProfile(Request $request, ServiceAdminController $serviceAdminController, UtilityController $utilityController, AESController $aesController){
         return $utilityController->getView($request, $aesController, '', ['data'=>self::getUserAuth($request, $serviceAdminController)], 'json_encrypt');
