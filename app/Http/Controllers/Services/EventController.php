@@ -25,24 +25,6 @@ class EventController extends Controller
         self::$jsonFileEventsCounter = storage_path('app/cache/events_counter.json');
         self::$jsonFileEventBookingCounter = storage_path('app/cache/event_booking_counter.json');
     }
-    public static function getFotoEvent($nameFile){
-        $filePath = storage_path('app/events/' . $nameFile);
-        if(!file_exists($filePath) || !is_file($filePath)){
-            return ['status'=>'error','message'=>'Foto event tidak ditemukan','statusCode'=>404];
-        }
-        $fileContent = file_get_contents($filePath);
-        return [
-            'status' => 'success',
-            'data' => [
-                'data' => base64_encode($fileContent),
-                'meta' => [
-                    'filename' => 'default.jpg',
-                    'size' => filesize($filePath),
-                    'type' => finfo_buffer(finfo_open(FILEINFO_MIME_TYPE), $fileContent),
-                ]
-            ]
-        ];
-    }
     private static function handleCache($inp, $id = null, $limit = null, $col = null, $alias = null, $formatDate = false, $shuffle = false, $searchFilter = null, $pagination = null){
         if(!is_null($id) && !empty($id) && $id){
             $found = false;
@@ -572,7 +554,6 @@ class EventController extends Controller
                     return $utilityController->getView($request, $aesController, '', ['message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'], 'json_encrypt', 400);
                 }
                 $fotoName = $item->hashName();
-                Storage::disk('events')->put($fotoName, file_get_contents($item));
                 $imageColumns[] = $fotoName;
             }else if($item && isset($item['url'])){
                 $imageColumns[] = $item['url'];
@@ -603,6 +584,9 @@ class EventController extends Controller
         // if($insertAPI['status'] == 'error'){
         //     return $utilityController->getView($request, $aesController, '', ['message' => $insertAPI['message']], 'json_encrypt', $insertAPI['statusCode']);
         // }
+        for($i = 0; $i < count($imageColumns); $i++){
+            file_put_contents(public_path('img/events/' . $imageColumns[$i]), file_get_contents($item));
+        }
         $this->dataCacheEvent('tambah', null, [
             'keybusinessgroup' => 'I5RLGI',
             'keyregistered' => '5EA9I2',
@@ -686,18 +670,56 @@ class EventController extends Controller
         // if($checkEventId['message'] == 'error'){
         //     return $utilityController->getView($request, $aesController, '', ['message'=>'Data event tidak ditemukan'], 'json_encrypt', 404);
         // }
+        $eventDetail = $this->dataCacheEvent(null, [
+            'id' => $request->input('event_id'),
+            'limit' => null,
+        ]);
+        if($eventDetail['status'] == 'error'){
+            $this->dataCacheEvent('sync_cache');
+        }
+        $eventDetail = $this->dataCacheEvent(null, [
+            'id' => $request->input('event_id'),
+            'limit' => null,
+        ]);
+        $eventDetail = $eventDetail['data'];
+        $fotoDb = [];
+        $imgKeys = ['imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'imageicon_9'];
+        foreach($imgKeys as $key){
+            $val = $eventDetail[$key] ?? null;
+            if(empty($val) || is_null($val)){
+                $fotoDb[] = null;
+                unset($eventDetail[$key]);
+                continue;
+            }
+            if(preg_match('/^https?:\/\//i', $val)){
+                $fotoDb[] = $val;
+                unset($eventDetail[$key]);
+                continue;
+            }
+            $filePath = public_path('img/events/' . $eventDetail[$key]);
+            $fotoDb[] = file_exists($filePath) && is_file($filePath) ? $eventDetail[$key] : null;
+            unset($eventDetail[$key]);
+        }
+        unset($eventDetail);
         $imageColumns = [];
         $foto = $utilityController->base64File($request, ['foto']);
         for($i = 0; $i < 9; $i++){
-            $item = $foto[$i];
+            $item = $foto[$i] ?? null;
+            if(!$item){
+                $imageColumns[] = '-';
+                continue;
+            }
             if($item instanceof \Illuminate\Http\UploadedFile){
                 if(!in_array($item->extension(), ['jpeg', 'png', 'jpg'])){
                     return $utilityController->getView($request, $aesController, '', ['message'=>'Format Foto tidak valid. Gunakan format jpeg, png, jpg'], 'json_encrypt', 400);
                 }
                 $fotoName = $item->hashName();
-                Storage::disk('events')->put($fotoName, file_get_contents($item));
                 $imageColumns[] = $fotoName;
             }else if($item && isset($item['url'])){
+                if(in_array($item['url'], ['hydration', 'updated'])){
+                    $imageColumns[] = $fotoDb[$i];
+                    continue;
+                }
                 $imageColumns[] = $item['url'];
             }else{
                 $imageColumns[] = '-';
@@ -734,6 +756,11 @@ class EventController extends Controller
         // if($updateAPI['status'] == 'error'){
         //     return $utilityController->getView($request, $aesController, '', ['message' => $insertAPI['message']], 'json_encrypt', $insertAPI['statusCode']);
         // }
+        for($i = 0; $i < count($imageColumns); $i++){
+            $item = $foto[$i] ?? null;
+            if((is_null($item) || is_array($item))) continue;
+            file_put_contents(public_path('img/events/' . $imageColumns[$i]), file_get_contents($item));
+        }
         $updatedCache = $this->dataCacheEvent('update', null, [
             'eventid' => $request->input('event_id'),
             'keybusinessgroup' => 'I5RLGI',

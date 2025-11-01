@@ -40,7 +40,7 @@ class UtilityController extends Controller
                 setCookie('__INITIAL_COSTUM_STATE__', base64_encode(json_encode($data)), 0, '/', null, false, false);
                 return response()->json(['status' => $statusCode ? 'success' : 'error'], $statusCode);
             }else if(is_string($cond) && $cond == 'json'){
-                return response()->json(['status' => $statusCode == 200 ? 'success' : 'error', 'data' => $data], $statusCode);
+                return response()->json(['status' => $statusCode == 200 ? 'success' : 'error', ...$data], $statusCode);
             }else if(is_string($cond) && $cond == 'json_encrypt'){
                 return response()->json(['status' => $statusCode == 200 ? 'success' : 'error', 'message' => $aesController->encryptResponse($data, $request->input('key'), $request->input('iv'))], $statusCode);
             }
@@ -161,13 +161,13 @@ class UtilityController extends Controller
             }
             if(isset($value['data'], $value['meta'])){
                 $uploadedFiles[$key] = $makeUploadedFile($key, $value);
-            }else if(isset($value[0]) && is_array($value[0]) && isset($value[0]['data'], $value[0]['meta'])){
+            }else if(isset($value[0]) && is_array($value[0])){
                 foreach($value as $i => $fileItem){
                     if(!isset($uploadedFiles[$key]) || !is_array($uploadedFiles[$key])){
                         $uploadedFiles[$key] = [];
                     }
                     if(!is_array($fileItem) || !isset($fileItem['data'], $fileItem['meta'])){
-                        $uploadedFiles[$key][$i] = $value;
+                        $uploadedFiles[$key][$i] = $fileItem;
                         continue;
                     }
                     $uploadedFiles[$key][$i] = $makeUploadedFile($key . "_{$i}", $fileItem);

@@ -102,12 +102,19 @@ class AdminController extends Controller
         $foto = [];
         $imgKeys = ['imageicon_1', 'imageicon_2', 'imageicon_3', 'imageicon_4', 'imageicon_5', 'imageicon_6', 'imageicon_7', 'imageicon_8', 'imageicon_9'];
         foreach($imgKeys as $key){
-            if(!empty($eventDetail[$key]) && !is_null($eventDetail[$key])){
-                $result = $eventController->getFotoEvent($eventDetail[$key]);
-                $foto[] = $result['status'] === 'success' ? $result['data'] : null;
-            }else{
+            $val = $eventDetail[$key] ?? null;
+            if(empty($val) || is_null($val)){
                 $foto[] = null;
+                unset($eventDetail[$key]);
+                continue;
             }
+            if(preg_match('/^https?:\/\//i', $val)){
+                $foto[] = $val;
+                unset($eventDetail[$key]);
+                continue;
+            }
+            $filePath = public_path('img/events/' . $eventDetail[$key]);
+            $foto[] = file_exists($filePath) && is_file($filePath) ? $eventDetail[$key] : null;
             unset($eventDetail[$key]);
         }
         $eventDetail['foto'] = $foto;
@@ -115,7 +122,7 @@ class AdminController extends Controller
             'category' => $categoryData['data'],
             'event' => $eventDetail,
         ];
-        return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json');
+        return $utilityController->getView($request, $aesController, '', ['data'=>$dataShow], 'json_encrypt');
     }
     public function showProfile(Request $request, ServiceAdminController $serviceAdminController, UtilityController $utilityController, AESController $aesController){
         return $utilityController->getView($request, $aesController, '', ['data'=>self::getUserAuth($request, $serviceAdminController)], 'json_encrypt');
